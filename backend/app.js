@@ -7,7 +7,7 @@ import UserRoute from "./src/routes/UserRoute.js"
 import TripRoute from "./src/routes/TripRoute.js"
 import IternaryRoute from "./src/routes/IternaryRoute.js"
 import placeRouter from "./src/routes/PlacesRoute.js";
-
+import RestaurantRoute from "./src/routes/RestaurantRoute.js"
 
 const app = express()
 
@@ -28,5 +28,6 @@ app.use("/api/v1/it" ,IternaryRoute)
 
 app.use("/api/v1/places", placeRouter);
 
+app.use("/api/v1/restaurant",RestaurantRoute);
 export default app;
 
