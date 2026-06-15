@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 
 import UserRoute from "./src/routes/UserRoute.js"
 import TripRoute from "./src/routes/TripRoute.js"
+import IternaryRoute from "./src/routes/IternaryRoute.js"
 
 
 const app = express()
@@ -20,6 +21,8 @@ app.use(cookieParser());
 
 app.use("/api/v1/users" , UserRoute)
 app.use("/api/v1/trip" , TripRoute)
+
+app.use("/api/v1/it" ,IternaryRoute)
 
 export default app;
 
