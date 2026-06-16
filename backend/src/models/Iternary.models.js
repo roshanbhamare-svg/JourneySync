@@ -30,7 +30,12 @@ const ItinerarySchema = new mongoose.Schema(
 
     day: {
         type: Number,
-        default:1
+        default:null
+    },
+
+    order:{
+        type:Number,
+        default:0
     }
 },
 {

@@ -2,33 +2,76 @@ import { Itinerary } from "../models/Iternary.models.js";
 import APIerror from "../utils/APIerror.js";
 import APIresponse from "../utils/APIresponse.js";
 
- const createItineraryItem = async (req, res) => {
+
+const createBulkItinerary = async (req, res) => {
+
     try {
 
         const {
             tripId,
-            type,
-            name,
-            category,
-            estimatedCost
+            items
         } = req.body;
 
-        const item = await Itinerary.create({
-            tripId,
-            type,
-            name,
-            category,
-            estimatedCost
+        if (!tripId || !items?.length) {
+
+            return res.status(400).json({
+                success: false,
+                message: "TripId and items are required"
+            });
+
+        }
+
+        const formattedItems =
+            items.map(item => ({
+
+                tripId,
+
+                type: item.type,
+
+                name: item.name,
+
+                category: item.category,
+
+                estimatedCost:
+                    item.estimatedCost || 0,
+
+                day: null,
+
+                order: 0
+
+            }));
+
+        const itineraries =
+            await Itinerary.insertMany(
+                formattedItems
+            );
+
+        return res.status(201).json({
+
+            success: true,
+
+            count:
+                itineraries.length,
+
+            itineraries
+
         });
 
-        return res.status(200).json(new APIresponse(200 , item , "Iternaary item Created Successfully"));
+    }
+    catch (error) {
 
-    } catch (error) {
+        return res.status(500).json({
 
-         throw new APIerror(500, "Something went wrong while creaing object");
+            success: false,
+
+            message: error.message
+
+        });
 
     }
+
 };
+
 
  const getTripItinerary = async (req, res) => {
 
@@ -50,34 +93,79 @@ import APIresponse from "../utils/APIresponse.js";
     }
 };
 
-const updateItineraryItem = async (req, res) => {
+const confirmItinerary = async (req, res) => {
 
     try {
 
-        const { itemId } = req.params;
+        const { tripId } = req.params;
 
-        const updatedItem =
-            await Itinerary.findByIdAndUpdate(
-                itemId,
-                req.body,
-                {
-                    new: true,
-                    runValidators: true
-                }
-            );
+        const { items } = req.body;
 
-        if (!updatedItem) {
-        
-            throw new APIerror(404 , "updated item not found")
+        if (!items || !items.length) {
+
+            return res.status(400).json({
+                success: false,
+                message: "No itinerary items provided"
+            });
+
         }
 
-        return res.status(200).json(new APIresponse(200 ,updatedItem , "object updated successfully" ));
+        const operations = items.map(item => ({
 
-    } catch (error) {
+            updateOne: {
 
-          throw new APIerror(404 , " item not updated")
+                filter: {
+                    _id: item._id
+                },
+
+                update: {
+
+                    $set: {
+                        day: item.day,
+                        order: item.order
+                    }
+
+                }
+
+            }
+
+        }));
+
+        await Itinerary.bulkWrite(
+            operations
+        );
+
+        const finalItinerary =
+            await Itinerary.find({
+                tripId
+            })
+            .sort({
+                day: 1,
+                order: 1
+            });
+
+        return res.status(200).json({
+
+            success: true,
+
+            itinerary:
+                finalItinerary
+
+        });
 
     }
+    catch (error) {
+
+        return res.status(500).json({
+
+            success: false,
+
+            message: error.message
+
+        });
+
+    }
+
 };
 
 const deleteItineraryItem = async (req, res) => {
@@ -104,4 +192,4 @@ const deleteItineraryItem = async (req, res) => {
     }
 };
 
-export {createItineraryItem , getTripItinerary , updateItineraryItem , deleteItineraryItem}
+export {createBulkItinerary , getTripItinerary , confirmItinerary , deleteItineraryItem}

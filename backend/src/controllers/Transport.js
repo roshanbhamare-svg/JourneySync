@@ -1,11 +1,12 @@
 
 import axios from "axios";
+import APIerror from "../utils/APIerror.js";
 
 const getFare = async (req, res) => {
 
     try {
 
-        const { source, destination } = req.body;
+        const { source, destination , transporttype} = req.body;
 
         const sourceResponse = await axios.get(
             "https://api.geoapify.com/v1/geocode/search",
@@ -78,13 +79,6 @@ const getFare = async (req, res) => {
             );
 
 
-        console.log(
-            JSON.stringify(
-                routeResponse.data,
-                null,
-                2
-            )
-        );
 
         const feature =
             routeResponse.data.features?.[0];
@@ -102,32 +96,53 @@ const getFare = async (req, res) => {
         const distanceKm =
             distanceMeters / 1000;
 
-        const estimatedFare =
-            Math.round(
-                distanceKm * 12
-            );
+        let fare = 0;
+
+       switch (transporttype) {
+
+    case "bus":
+
+        fare =
+        distanceKm * 2;
+
+        break;
+
+    case "train":
+
+        fare =
+        distanceKm * 1.5;
+
+        break;
+
+    case "flight":
+
+        fare =
+        (distanceKm * 6) + 500;
+
+        break;
+
+    default:
+
+        return res.status(400).json({
+            success:false,
+            message:"Invalid transport type"
+        });
+}
 
         return res.status(200).json({
             success: true,
             source,
             destination,
+            transporttype,
             distance:
                 distanceKm.toFixed(2),
-            estimatedFare
+            estimatedFare: Math.round(fare)
         });
 
     }
     catch (error) {
 
-        console.log(error.response?.data);
-
-        return res.status(500).json({
-
-            success: false,
-
-            message: error.message
-
-        });
+        throw new APIerror(404,"estimated fare not calculated")
 
     }
 
