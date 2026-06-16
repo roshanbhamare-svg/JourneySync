@@ -7,15 +7,6 @@ const getFare = async (req, res) => {
 
         const { source, destination } = req.body;
 
-        if (!source || !destination) {
-            return res.status(400).json({
-                success: false,
-                message: "Source and destination required"
-            });
-        }
-
-        // SOURCE COORDINATES
-
         const sourceResponse = await axios.get(
             "https://api.geoapify.com/v1/geocode/search",
             {
@@ -42,16 +33,13 @@ const getFare = async (req, res) => {
         const sourceLon =
             sourceFeature.properties.lon;
 
-        // DESTINATION COORDINATES
-
         const destinationResponse =
             await axios.get(
                 "https://api.geoapify.com/v1/geocode/search",
                 {
                     params: {
                         text: destination,
-                        apiKey:
-                            process.env.GEOAPIFY_API_KEY
+                        apiKey: process.env.GEOAPIFY_API_KEY
                     }
                 }
             );
@@ -72,61 +60,66 @@ const getFare = async (req, res) => {
         const destinationLon =
             destinationFeature.properties.lon;
 
-        // HAVERSINE DISTANCE
 
-        const toRad = (value) =>
-            value * Math.PI / 180;
+        const routeResponse =
+            await axios.get(
+                "https://api.geoapify.com/v1/routing",
+                {
+                    params: {
+                        waypoints:
+`${sourceLat},${sourceLon}|${destinationLat},${destinationLon}`,
 
-        const R = 6371;
+                        mode: "drive",
 
-        const dLat =
-            toRad(destinationLat - sourceLat);
-
-        const dLon =
-            toRad(destinationLon - sourceLon);
-
-        const a =
-            Math.sin(dLat / 2) *
-            Math.sin(dLat / 2) +
-            Math.cos(toRad(sourceLat)) *
-            Math.cos(toRad(destinationLat)) *
-            Math.sin(dLon / 2) *
-            Math.sin(dLon / 2);
-
-        const c =
-            2 * Math.atan2(
-                Math.sqrt(a),
-                Math.sqrt(1 - a)
+                        apiKey:
+                        process.env.GEOAPIFY_API_KEY
+                    }
+                }
             );
 
-        const distanceKm = R * c;
 
-        // CUSTOM FARE
+        console.log(
+            JSON.stringify(
+                routeResponse.data,
+                null,
+                2
+            )
+        );
 
-        const farePerKm = 12;
+        const feature =
+            routeResponse.data.features?.[0];
+
+        if (!feature) {
+            return res.status(404).json({
+                success: false,
+                message: "No route found"
+            });
+        }
+
+        const distanceMeters =
+            feature.properties.distance;
+
+        const distanceKm =
+            distanceMeters / 1000;
 
         const estimatedFare =
             Math.round(
-                distanceKm * farePerKm
+                distanceKm * 12
             );
 
         return res.status(200).json({
-
             success: true,
-
             source,
-
             destination,
-
             distance:
                 distanceKm.toFixed(2),
-
             estimatedFare
-
         });
 
     }
     catch (error) {
+
+        console.log(error.response?.data);
 
         return res.status(500).json({
 
