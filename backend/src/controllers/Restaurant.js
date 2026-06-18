@@ -75,13 +75,19 @@ const getRestaurants = async (req, res) => {
                         restaurant.properties.lon,
 
                     address:
-                        restaurant.properties.address_line1
+                        restaurant.properties.address_line1,
+                    
+                    estimatedcost:300
                 })
             );
+        
+        
 
         return res.status(200).json({
             success: true,
             restaurants
+            
+
         });
 
     } catch (error) {

@@ -135,23 +135,8 @@ const confirmItinerary = async (req, res) => {
             operations
         );
 
-        const finalItinerary =
-            await Itinerary.find({
-                tripId
-            })
-            .sort({
-                day: 1,
-                order: 1
-            });
+        return res.status(200).json(new APIresponse(200 , null , "Iternary Confirmed"))
 
-        return res.status(200).json({
-
-            success: true,
-
-            itinerary:
-                finalItinerary
-
-        });
 
     }
     catch (error) {
@@ -192,4 +177,46 @@ const deleteItineraryItem = async (req, res) => {
     }
 };
 
-export {createBulkItinerary , getTripItinerary , confirmItinerary , deleteItineraryItem}
+
+const getFinalItinerary = async (req,res)=>{
+
+    try{
+
+        const { tripId } =
+        req.params;
+
+        const itinerary =
+        await Itinerary.find({
+            tripId
+        })
+        .sort({
+            day:1,
+            order:1
+        });
+
+        return res.status(200).json({
+
+            success:true,
+
+            itinerary
+
+        });
+
+    }
+    catch(error){
+
+        return res.status(500).json({
+
+            success:false,
+
+            message:error.message
+
+        });
+
+    }
+
+}
+
+export {createBulkItinerary , getTripItinerary , confirmItinerary , deleteItineraryItem , getFinalItinerary}
+
+

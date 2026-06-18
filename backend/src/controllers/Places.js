@@ -61,12 +61,49 @@ import APIerror from "../utils/APIerror.js";
                 }
             );
 
-        return res.status(200).json({
-            success: true,
-            destination,
-            places:
-                placesResponse.data.features
-        });
+
+            const places =
+placesResponse.data.features.map(
+(place) => ({
+
+    name:
+    place.properties.name,
+
+    placeId:
+    place.properties.place_id,
+
+    category:
+    place.properties.categories,
+
+    lat:
+    place.properties.lat,
+
+    lon:
+    place.properties.lon,
+
+    address:
+    place.properties.address_line1,
+
+    estimatedCost:
+    place.properties.categories.includes(
+        "tourism.attraction"
+    )
+    ? 100
+    : 50
+
+})
+);
+
+return res.status(200).json({
+
+    success: true,
+
+    destination,
+
+    places
+
+});
+
 
     } catch (error) {
 
