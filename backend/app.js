@@ -9,6 +9,8 @@ import IternaryRoute from "./src/routes/IternaryRoute.js"
 import placeRouter from "./src/routes/PlacesRoute.js";
 import RestaurantRoute from "./src/routes/RestaurantRoute.js"
 import transportRouter from "./src/routes/TransportRoute.js";
+import BudgetRouter from "./src/routes/BudgetTrackerRoute.js"
+import expenseRouter from "./src/routes/ExpenseTrackerRoute.js"
 
 const app = express()
 
@@ -35,7 +37,9 @@ app.use("/api/v1/restaurant",RestaurantRoute);
 
 app.use("/api/v1/transport",transportRouter);
 
+app.use("/api/v1/budget",BudgetRouter);
 
+app.use("/api/v1/expense" , expenseRouter);
 
 export default app;
 
