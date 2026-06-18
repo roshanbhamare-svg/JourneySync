@@ -11,6 +11,7 @@ import RestaurantRoute from "./src/routes/RestaurantRoute.js"
 import transportRouter from "./src/routes/TransportRoute.js";
 import BudgetRouter from "./src/routes/BudgetTrackerRoute.js"
 import expenseRouter from "./src/routes/ExpenseTrackerRoute.js"
+import checklistRouter from "./src/routes/CheckListRoute.js";
 
 const app = express()
 
@@ -40,6 +41,8 @@ app.use("/api/v1/transport",transportRouter);
 app.use("/api/v1/budget",BudgetRouter);
 
 app.use("/api/v1/expense" , expenseRouter);
+
+app.use("/api/v1/checklist" , checklistRouter);
 
 export default app;
 
