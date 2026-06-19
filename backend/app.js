@@ -27,7 +27,7 @@ app.use(cookieParser());
 app.use("/api/v1/users" , UserRoute)
 app.use("/api/v1/trip" , TripRoute)
 
-app.use("/api/v1/it" ,IternaryRoute)
+app.use("/api/v1/itinerary" ,IternaryRoute)
 
 
 app.use("/api/v1/places", placeRouter);

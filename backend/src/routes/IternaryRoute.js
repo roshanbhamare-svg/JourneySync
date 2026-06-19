@@ -4,7 +4,7 @@ import {createBulkItinerary, getTripItinerary, confirmItinerary, deleteItinerary
 
 const router = Router();
 
-router.route("/iternary").post(createBulkItinerary);
+router.route("/bulk").post(createBulkItinerary);
 
 router.route("/getiternary/:tripId").get(getTripItinerary);
 
