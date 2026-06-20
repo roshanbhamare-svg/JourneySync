@@ -4,9 +4,9 @@ import {createChecklist , getChecklist , updateChecklist , deleteChecklist} from
 const router = Router()
 
 router.route("/create").post(createChecklist)
-router.route("/update/:id").put(updateChecklist)
-router.route("/get/:tripId").get(getChecklist)
-router.route("/delete/:id").delete(deleteChecklist)
+router.route("/:id").put(updateChecklist)
+router.route("/:tripId").get(getChecklist)
+router.route("/:id").delete(deleteChecklist)
 
 
 export default router;

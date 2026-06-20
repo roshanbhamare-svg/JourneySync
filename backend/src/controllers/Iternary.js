@@ -217,6 +217,49 @@ const getFinalItinerary = async (req,res)=>{
 
 }
 
-export {createBulkItinerary , getTripItinerary , confirmItinerary , deleteItineraryItem , getFinalItinerary}
+const getItineraryStatus =
+async(req,res)=>{
+
+    try{
+
+        const { tripId } =
+        req.params;
+
+        const items =
+        await Itinerary.find({
+            tripId
+        });
+
+        const confirmed =
+        items.length > 0 &&
+        items.every(
+            item =>
+            item.day !== null
+        );
+
+        return res.status(200).json({
+
+            success:true,
+
+            confirmed
+
+        });
+
+    }
+    catch(error){
+
+        return res.status(500).json({
+
+            success:false,
+
+            message:error.message
+
+        });
+
+    }
+
+};
+
+export {createBulkItinerary , getTripItinerary , confirmItinerary , deleteItineraryItem , getFinalItinerary , getItineraryStatus}
 
 

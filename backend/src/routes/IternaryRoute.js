@@ -1,17 +1,19 @@
 import { Router } from "express";
 
-import {createBulkItinerary, getTripItinerary, confirmItinerary, deleteItineraryItem , getFinalItinerary} from "../controllers/Iternary.js";
+import {createBulkItinerary, getTripItinerary, confirmItinerary, deleteItineraryItem , getFinalItinerary , getItineraryStatus } from "../controllers/Iternary.js";
 
 const router = Router();
 
 router.route("/bulk").post(createBulkItinerary);
 
-router.route("/getiternary/:tripId").get(getTripItinerary);
+router.route("/:tripId").get(getTripItinerary);
 
-router.route("/updateiternary/:tripId").put(confirmItinerary);
+router.route("/confirm/:tripId").put(confirmItinerary);
 
-router.route("/deleteiternary/:itemId").delete(deleteItineraryItem);
+router.route("/:itemId").delete(deleteItineraryItem);
 
-router.route("/getfinaliternary/:tripId").get(getFinalItinerary)
+router.route("/final/:tripId").get(getFinalItinerary)
+
+router.route("/status/:tripId").get(getItineraryStatus)
 
 export default router;

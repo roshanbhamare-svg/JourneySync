@@ -4,6 +4,6 @@ import getBudgetTracker from "../controllers/BudgetTracker.js"
 
 const router = Router();
 
-router.route("/getbudgettracker/:tripId").get(getBudgetTracker)
+router.route("/:tripId").get(getBudgetTracker)
 
 export default router;

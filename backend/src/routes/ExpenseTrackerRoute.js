@@ -5,13 +5,13 @@ import {addExpense ,getExpenses , deleteExpense , getExpenseChart} from "../cont
 
 const router = Router();
 
-router.route("/addexpense").post(addExpense)
+router.route("/add").post(addExpense)
 
-router.route("/getallexpense").get(getExpenses)
+router.route("/getexpense/:tripId").get(getExpenses)
 
-router.route("/deleteexpense").get(deleteExpense)
+router.route("/:expenseId").delete(deleteExpense)
 
-router.route("/getexpensechart").get(getExpenseChart)
+router.route("/chart/:tripId").get(getExpenseChart)
 
 export default router;
 
