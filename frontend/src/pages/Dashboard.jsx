@@ -1,189 +1,282 @@
 import { useState } from "react";
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+
+import { useNavigate }
+from "react-router-dom";
 
 import {
-  createTrip,
-  getAllTrips,
-  deleteTrip
+    createTrip,
+    getAllTrips,
+    deleteTrip
 }
 from "../services/tripService";
 
-import TripCard from "../components/TripCard";
+import TripCard
+from "../components/TripCard";
 
 function Dashboard() {
 
-  const navigate = useNavigate();
+    const navigate =
+    useNavigate();
 
-  const [trips, setTrips] = useState([]);
+    const [trips,
+    setTrips] =
+    useState([]);
 
-  const [formData, setFormData] = useState({
-    source: "",
-    destination: "",
-    days: "",
-    people: "",
-    totalBudget: ""
-  });
+    const [selectedTrip,
+    setSelectedTrip] =
+    useState(
+        localStorage.getItem(
+            "currentTripId"
+        ) || ""
+    );
 
-  const fetchTrips = async () => {
+    const [formData,
+    setFormData] =
+    useState({
 
-    try {
+        source: "",
 
-      const response =
-      await getAllTrips();
+        destination: "",
 
-      setTrips(response.data.data);
+        days: "",
 
-    }
-    catch (error) {
+        people: "",
 
-      console.log(error);
+        totalBudget: ""
 
-    }
-
-  };
-
-  useEffect(() => {
-
-    fetchTrips();
-
-  }, []);
-
-  const handleChange = (e) => {
-
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
     });
 
-  };
+    const fetchTrips =
+    async () => {
 
-  const handleCreateTrip = async (e) => {
+        try {
 
-    e.preventDefault();
+            const response =
+            await getAllTrips();
 
-    try {
+            setTrips(
+                response.data.data
+            );
 
-      await createTrip(formData);
+        }
+        catch (error) {
 
-      alert("Trip Created");
+            console.log(error);
 
-      setFormData({
-        source: "",
-        destination: "",
-        days: "",
-        people: "",
-        totalBudget: ""
-      });
+        }
 
-      fetchTrips();
+    };
 
-    }
-    catch (error) {
+    useEffect(() => {
 
-      console.log(error);
+        fetchTrips();
 
-    }
+    }, []);
 
-  };
+    const handleChange =
+    (e) => {
 
-  const handleDelete = async (tripId) => {
+        setFormData({
 
-    try {
+            ...formData,
 
-      await deleteTrip(tripId);
+            [e.target.name]:
+            e.target.value
 
-      fetchTrips();
+        });
 
-    }
-    catch (error) {
+    };
 
-      console.log(error);
+    const handleCreateTrip =
+    async (e) => {
 
-    }
+        e.preventDefault();
 
-  };
+        try {
 
-  const handleOpen = (tripId) => {
+            await createTrip(
+                formData
+            );
 
-    navigate(`/trip/${tripId}`);
+            alert(
+                "Trip Created"
+            );
 
-  };
+            setFormData({
 
-  return (
+                source: "",
 
-    <div>
+                destination: "",
 
-      <h1>Trip Dashboard</h1>
+                days: "",
 
-      <form onSubmit={handleCreateTrip}>
+                people: "",
 
-        <input
-          type="text"
-          name="source"
-          placeholder="Source"
-          value={formData.source}
-          onChange={handleChange}
-        />
+                totalBudget: ""
 
-        <input
-          type="text"
-          name="destination"
-          placeholder="Destination"
-          value={formData.destination}
-          onChange={handleChange}
-        />
+            });
 
-        <input
-          type="number"
-          name="days"
-          placeholder="Days"
-          value={formData.days}
-          onChange={handleChange}
-        />
+            fetchTrips();
 
-        <input
-          type="number"
-          name="people"
-          placeholder="People"
-          value={formData.people}
-          onChange={handleChange}
-        />
+        }
+        catch (error) {
 
-        <input
-          type="number"
-          name="totalBudget"
-          placeholder="Budget"
-          value={formData.totalBudget}
-          onChange={handleChange}
-        />
+            console.log(error);
 
-        <button type="submit">
-          Create Trip
-        </button>
+        }
 
-      </form>
+    };
 
-      <hr />
+    const handleDelete =
+    async (tripId) => {
 
-      <h2>My Trips</h2>
+        try {
 
-      {
-        trips.map((trip) => (
+            await deleteTrip(
+                tripId
+            );
 
-          <TripCard
-            key={trip._id}
-            trip={trip}
-            onDelete={handleDelete}
-            onOpen={handleOpen}
-          />
+            fetchTrips();
 
-        ))
-      }
+        }
+        catch (error) {
 
-    </div>
+            console.log(error);
 
-  );
+        }
+
+    };
+
+    const handleOpen =
+    (tripId) => {
+
+        localStorage.setItem(
+            "currentTripId",
+            tripId
+        );
+
+        setSelectedTrip(
+            tripId
+        );
+
+        navigate(
+            `/trip/${tripId}/places`
+        );
+
+    };
+
+    return (
+
+        <div>
+
+            <h1>
+                Trip Dashboard
+            </h1>
+
+            <hr />
+
+            {
+                selectedTrip &&
+                (
+                    <h3>
+                        Selected Trip :
+                        {" "}
+                        {selectedTrip}
+                    </h3>
+                )
+            }
+
+            <hr />
+
+            <form
+            onSubmit={
+                handleCreateTrip
+            }
+            >
+
+                <input
+                    type="text"
+                    name="source"
+                    placeholder="Source"
+                    value={formData.source}
+                    onChange={handleChange}
+                />
+
+                <input
+                    type="text"
+                    name="destination"
+                    placeholder="Destination"
+                    value={formData.destination}
+                    onChange={handleChange}
+                />
+
+                <input
+                    type="number"
+                    name="days"
+                    placeholder="Days"
+                    value={formData.days}
+                    onChange={handleChange}
+                />
+
+                <input
+                    type="number"
+                    name="people"
+                    placeholder="People"
+                    value={formData.people}
+                    onChange={handleChange}
+                />
+
+                <input
+                    type="number"
+                    name="totalBudget"
+                    placeholder="Budget"
+                    value={formData.totalBudget}
+                    onChange={handleChange}
+                />
+
+                <button
+                type="submit"
+                >
+                    Create Trip
+                </button>
+
+            </form>
+
+            <hr />
+
+            <h2>
+                My Trips
+            </h2>
+
+            {
+
+                trips.map(
+                    (trip) => (
+
+                    <TripCard
+
+                        key={trip._id}
+
+                        trip={trip}
+
+                        onDelete={
+                            handleDelete
+                        }
+
+                        onOpen={
+                            handleOpen
+                        }
+
+                    />
+
+                ))
+
+            }
+
+        </div>
+
+    );
 
 }
 

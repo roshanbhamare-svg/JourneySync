@@ -18,7 +18,7 @@ function TripCard({ trip, onDelete, onOpen }) {
       <p>Budget : ₹{trip.totalBudget}</p>
 
       <button onClick={() => onOpen(trip._id)}>
-        Open Trip
+        Select Trip
       </button>
 
       <button onClick={() => onDelete(trip._id)}>

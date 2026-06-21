@@ -4,86 +4,136 @@ import { useNavigate } from "react-router-dom";
 
 function Login() {
 
-  const navigate = useNavigate();
+const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({
+const [formData, setFormData] = useState({
 
-    email: "",
-    password: ""
 
-  });
+email: "",
+password: ""
 
-  const handleChange = (e) => {
 
-    setFormData({
+});
 
-      ...formData,
+const handleChange = (e) => {
 
-      [e.target.name]:
-      e.target.value
 
-    });
+setFormData({
 
-  };
+  ...formData,
 
-  const handleSubmit = async (e) => {
+  [e.target.name]:
+  e.target.value
 
-    e.preventDefault();
+});
 
-    try {
 
-      const response =
-      await loginUser(formData);
+};
 
-      localStorage.setItem(
-        "user",
-        JSON.stringify(response.data.data)
-      );
+const handleSubmit = async (e) => {
 
-      navigate("/dashboard");
 
-    } catch (error) {
+e.preventDefault();
 
-      alert(
-        error.response?.data?.message ||
-        "Login Failed"
-      );
+try {
 
-    }
+  const response =
+  await loginUser(formData);
 
-  };
+  localStorage.setItem(
+    "user",
+    JSON.stringify(
+      response.data.data
+    )
+  );
 
-  return (
+  if(
+    response.data.data
+    ?.accessToken
+  ){
 
-    <div>
+    localStorage.setItem(
+      "token",
+      response.data.data.accessToken
+    );
 
-      <h1>Login</h1>
+  }
 
-      <form onSubmit={handleSubmit}>
+  alert(
+    "Login Successful"
+  );
 
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          onChange={handleChange}
-        />
+  navigate(
+    "/dashboard"
+  );
 
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          onChange={handleChange}
-        />
+}
+catch (error) {
 
-        <button type="submit">
-          Login
-        </button>
+  alert(
 
-      </form>
+    error.response
+    ?.data
+    ?.message ||
 
-    </div>
+    "Login Failed"
 
   );
+
+}
+
+
+};
+
+return (
+
+
+<div>
+
+  <h1>
+    Login
+  </h1>
+
+  <form
+  onSubmit={
+    handleSubmit
+  }
+  >
+
+    <input
+      type="email"
+      name="email"
+      placeholder="Email"
+      value={formData.email}
+      onChange={handleChange}
+    />
+
+    <br />
+    <br />
+
+    <input
+      type="password"
+      name="password"
+      placeholder="Password"
+      value={formData.password}
+      onChange={handleChange}
+    />
+
+    <br />
+    <br />
+
+    <button
+    type="submit"
+    >
+      Login
+    </button>
+
+  </form>
+
+</div>
+
+
+);
 
 }
 

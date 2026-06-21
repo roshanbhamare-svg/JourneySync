@@ -128,4 +128,113 @@ const options = {
 
 
 
-export {userregister , generateAccessAndRefreshTokens , loginUser ,  logoutUser}
+const refreshAccessToken = async (req,res)=>{
+
+    const incomingRefreshToken =
+
+        req.cookies.refreshToken ||
+
+        req.body.refreshToken;
+
+    if(!incomingRefreshToken){
+
+        throw new APIerror(
+            401,
+            "Refresh token required"
+        );
+
+    }
+
+    try{
+
+        const decodedToken =
+        jwt.verify(
+            incomingRefreshToken,
+            process.env.REFRESH_TOKEN_SECRET
+        );
+
+        const user =
+        await User.findById(
+            decodedToken?._id
+        );
+
+        if(!user){
+
+            throw new APIerror(
+                401,
+                "Invalid refresh token"
+            );
+
+        }
+
+        if(
+            incomingRefreshToken !==
+            user.refreshToken
+        ){
+
+            throw new APIerror(
+                401,
+                "Refresh token expired"
+            );
+
+        }
+
+        const {
+
+            accessToken,
+
+            refreshToken
+
+        }
+
+        = await generateAccessAndRefreshTokens(
+            user._id
+        );
+
+        const options = {
+
+            httpOnly:true,
+
+            secure:true
+
+        };
+
+        return res
+
+        .status(200)
+
+        .cookie(
+            "accessToken",
+            accessToken,
+            options
+        )
+
+        .cookie(
+            "refreshToken",
+            refreshToken,
+            options
+        )
+
+        .json({
+
+            success:true,
+
+            accessToken,
+
+            refreshToken
+
+        });
+
+    }
+    catch(error){
+
+        throw new APIerror(
+            401,
+            "Invalid refresh token"
+        );
+
+    }
+
+};
+
+export {userregister , generateAccessAndRefreshTokens , loginUser ,  logoutUser , refreshAccessToken}
