@@ -87,51 +87,54 @@ catch (error) {
 
 return (
 
+<div className="auth-wrapper">
 
-<div>
+  <div className="auth-card">
 
-  <h1>
-    Login
-  </h1>
+    <div className="auth-header">
+      <h1>Login</h1>
+      <p>Welcome back to JourneySync</p>
+    </div>
 
-  <form
-  onSubmit={
-    handleSubmit
-  }
-  >
+    <form onSubmit={handleSubmit}>
 
-    <input
-      type="email"
-      name="email"
-      placeholder="Email"
-      value={formData.email}
-      onChange={handleChange}
-    />
+      <div className="form-group">
+        <label>Email Address</label>
+        <input
+          type="email"
+          name="email"
+          placeholder="Enter your email"
+          value={formData.email}
+          onChange={handleChange}
+          required
+        />
+      </div>
 
-    <br />
-    <br />
+      <div className="form-group">
+        <label>Password</label>
+        <input
+          type="password"
+          name="password"
+          placeholder="Enter your password"
+          value={formData.password}
+          onChange={handleChange}
+          required
+        />
+      </div>
 
-    <input
-      type="password"
-      name="password"
-      placeholder="Password"
-      value={formData.password}
-      onChange={handleChange}
-    />
+      <button type="submit" className="btn-primary" style={{ marginTop: "10px" }}>
+        Login
+      </button>
 
-    <br />
-    <br />
+    </form>
 
-    <button
-    type="submit"
-    >
-      Login
-    </button>
+    <div className="auth-footer">
+      Don't have an account? <a href="/register" onClick={(e) => { e.preventDefault(); navigate("/register"); }}>Sign Up</a>
+    </div>
 
-  </form>
+  </div>
 
 </div>
-
 
 );
 

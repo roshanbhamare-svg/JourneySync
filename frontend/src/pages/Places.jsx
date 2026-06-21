@@ -140,49 +140,52 @@ function Places() {
 
         <div>
 
-            <h1>
-                Places
-            </h1>
+            <h1 style={{ marginBottom: "24px" }}>Explore Places</h1>
 
-            {
-                places.map(
-                    (place) => (
+            <div className="cards-grid">
+                {
+                    places.map(
+                        (place) => (
 
-                    <PlaceCard
+                        <PlaceCard
 
-                        key={
-                            place.placeId
-                        }
-
-                        place={
-                            place
-                        }
-
-                        selected={
-                            selectedPlaces.some(
-                                item =>
-                                item.placeId ===
+                            key={
                                 place.placeId
-                            )
-                        }
+                            }
 
-                        onSelect={
-                            handleSelect
-                        }
+                            place={
+                                place
+                            }
 
-                    />
+                            selected={
+                                selectedPlaces.some(
+                                    item =>
+                                    item.placeId ===
+                                    place.placeId
+                                )
+                            }
 
+                            onSelect={
+                                handleSelect
+                            }
+
+                        />
+
+                        )
                     )
-                )
-            }
-
-            <button
-                onClick={
-                    handleConfirm
                 }
-            >
-                Confirm Places
-            </button>
+            </div>
+
+            <div className="floating-actions">
+                <button
+                    className="confirm-floating-btn"
+                    onClick={
+                        handleConfirm
+                    }
+                >
+                    Confirm Places ({selectedPlaces.length} selected)
+                </button>
+            </div>
 
         </div>
 

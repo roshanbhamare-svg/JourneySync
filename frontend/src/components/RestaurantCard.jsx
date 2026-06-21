@@ -5,37 +5,21 @@ function RestaurantCard({
 }) {
 
     return (
-        <div
-            style={{
-                border: "1px solid black",
-                padding: "10px",
-                margin: "10px"
-            }}
-        >
-            <h3>
-                {restaurant.name}
-            </h3>
+        <div className={`item-card ${selected ? "selected" : ""}`}>
+            <div>
+                <h3 className="item-card-title">{restaurant.name}</h3>
+                <p className="item-card-address">{restaurant.address}</p>
+            </div>
 
-            <p>
-                {restaurant.address}
-            </p>
-
-            <p>
-                Cost: ₹{restaurant.estimatedCost}
-            </p>
-
-            <button
-                onClick={() =>
-                    onSelect(restaurant)
-                }
-            >
-                {
-                    selected
-                        ? "Remove"
-                        : "Select"
-                }
-            </button>
-
+            <div className="item-card-footer">
+                <span className="item-card-cost">₹{restaurant.estimatedCost}</span>
+                <button
+                    className={selected ? "btn-danger" : "btn-secondary"}
+                    onClick={() => onSelect(restaurant)}
+                >
+                    {selected ? "Remove" : "Select"}
+                </button>
+            </div>
         </div>
     );
 }

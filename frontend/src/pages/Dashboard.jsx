@@ -166,113 +166,95 @@ function Dashboard() {
 
     };
 
-    return (
+return (
 
         <div>
 
-            <h1>
-                Trip Dashboard
-            </h1>
+            <div className="dashboard-header">
+                <h1>Trip Dashboard</h1>
+                {
+                    selectedTrip && (
+                        <div className="selected-trip-badge">
+                            Selected Trip ID: {selectedTrip}
+                        </div>
+                    )
+                }
+            </div>
 
-            <hr />
+            <div className="create-trip-section">
+                <div className="create-trip-card">
+                    <h3 className="create-trip-title">Plan a New Adventure</h3>
+                    <form onSubmit={handleCreateTrip}>
+                        <div className="form-row">
+                            <input
+                                type="text"
+                                name="source"
+                                placeholder="Source (e.g. Mumbai)"
+                                value={formData.source}
+                                onChange={handleChange}
+                                required
+                            />
 
-            {
-                selectedTrip &&
-                (
-                    <h3>
-                        Selected Trip :
-                        {" "}
-                        {selectedTrip}
-                    </h3>
-                )
-            }
+                            <input
+                                type="text"
+                                name="destination"
+                                placeholder="Destination (e.g. Goa)"
+                                value={formData.destination}
+                                onChange={handleChange}
+                                required
+                            />
 
-            <hr />
+                            <input
+                                type="number"
+                                name="days"
+                                placeholder="Days"
+                                value={formData.days}
+                                onChange={handleChange}
+                                required
+                            />
 
-            <form
-            onSubmit={
-                handleCreateTrip
-            }
-            >
+                            <input
+                                type="number"
+                                name="people"
+                                placeholder="People"
+                                value={formData.people}
+                                onChange={handleChange}
+                                required
+                            />
 
-                <input
-                    type="text"
-                    name="source"
-                    placeholder="Source"
-                    value={formData.source}
-                    onChange={handleChange}
-                />
+                            <input
+                                type="number"
+                                name="totalBudget"
+                                placeholder="Budget (₹)"
+                                value={formData.totalBudget}
+                                onChange={handleChange}
+                                required
+                            />
+                        </div>
 
-                <input
-                    type="text"
-                    name="destination"
-                    placeholder="Destination"
-                    value={formData.destination}
-                    onChange={handleChange}
-                />
+                        <button type="submit" className="btn-primary" style={{ alignSelf: "flex-end", marginTop: "8px" }}>
+                            Create Trip
+                        </button>
+                    </form>
+                </div>
+            </div>
 
-                <input
-                    type="number"
-                    name="days"
-                    placeholder="Days"
-                    value={formData.days}
-                    onChange={handleChange}
-                />
-
-                <input
-                    type="number"
-                    name="people"
-                    placeholder="People"
-                    value={formData.people}
-                    onChange={handleChange}
-                />
-
-                <input
-                    type="number"
-                    name="totalBudget"
-                    placeholder="Budget"
-                    value={formData.totalBudget}
-                    onChange={handleChange}
-                />
-
-                <button
-                type="submit"
-                >
-                    Create Trip
-                </button>
-
-            </form>
-
-            <hr />
-
-            <h2>
+            <h2 className="trips-section-title">
                 My Trips
             </h2>
 
-            {
-
-                trips.map(
-                    (trip) => (
-
-                    <TripCard
-
-                        key={trip._id}
-
-                        trip={trip}
-
-                        onDelete={
-                            handleDelete
-                        }
-
-                        onOpen={
-                            handleOpen
-                        }
-
-                    />
-
-                ))
-
-            }
+            <div className="trips-grid">
+                {
+                    trips.map((trip) => (
+                        <TripCard
+                            key={trip._id}
+                            trip={trip}
+                            onDelete={handleDelete}
+                            onOpen={handleOpen}
+                        />
+                    ))
+                }
+            </div>
 
         </div>
 

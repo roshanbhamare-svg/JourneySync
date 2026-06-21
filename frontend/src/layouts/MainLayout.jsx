@@ -5,13 +5,13 @@ function MainLayout() {
 
     return (
 
-        <div>
+        <div className="main-layout">
 
             <Navbar />
 
-            <hr />
-
-            <Outlet />
+            <main className="app-container" style={{ paddingBottom: "100px" }}>
+                <Outlet />
+            </main>
 
         </div>
 

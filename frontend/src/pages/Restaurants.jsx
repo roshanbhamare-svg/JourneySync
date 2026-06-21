@@ -140,51 +140,52 @@ function Restaurants() {
 
         <div>
 
-            <h1>
-                Restaurants
-            </h1>
+            <h1 style={{ marginBottom: "24px" }}>Explore Restaurants</h1>
 
-            {
+            <div className="cards-grid">
+                {
+                    restaurants.map(
+                        restaurant => (
 
-                restaurants.map(
-                    restaurant => (
+                        <RestaurantCard
 
-                    <RestaurantCard
+                            key={
+                            restaurant.placeId
+                            }
 
-                        key={
-                        restaurant.placeId
-                        }
+                            restaurant={
+                            restaurant
+                            }
 
-                        restaurant={
-                        restaurant
-                        }
+                            selected={
+                            selectedRestaurants.some(
+                            item =>
+                            item.placeId ===
+                            restaurant.placeId
+                            )
+                            }
 
-                        selected={
-                        selectedRestaurants.some(
-                        item =>
-                        item.placeId ===
-                        restaurant.placeId
+                            onSelect={
+                            handleSelect
+                            }
+
+                        />
+
                         )
-                        }
-
-                        onSelect={
-                        handleSelect
-                        }
-
-                    />
-
                     )
-                )
-
-            }
-
-            <button
-                onClick={
-                    handleConfirm
                 }
-            >
-                Confirm Restaurants
-            </button>
+            </div>
+
+            <div className="floating-actions">
+                <button
+                    className="confirm-floating-btn"
+                    onClick={
+                        handleConfirm
+                    }
+                >
+                    Confirm Restaurants ({selectedRestaurants.length} selected)
+                </button>
+            </div>
 
         </div>
 

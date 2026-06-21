@@ -21,6 +21,8 @@ from "../services/expenseService";
 
 import ItineraryGuard from "../components/ItineraryGuard";
 
+const COLORS = ["#6366f1", "#34d399", "#fbbf24", "#f43f5e", "#a855f7"];
+
 function ExpenseTracker(){
 
     const { tripId } =
@@ -183,205 +185,160 @@ function ExpenseTracker(){
         <ItineraryGuard>
             <div>
 
-            <h1>
-                Expense Tracker
-            </h1>
+                <h1 style={{ marginBottom: "24px" }}>Expense Tracker</h1>
 
-            <form
-            onSubmit={
-                handleSubmit
-            }
-            >
+                <div className="budget-grid">
+                    
+                    <div>
+                        <div className="glass-panel" style={{ marginBottom: "24px" }}>
+                            <h3 style={{ marginBottom: "16px" }}>Add New Expense</h3>
+                            <form onSubmit={handleSubmit}>
+                                <div className="form-group">
+                                    <label>Expense Name</label>
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        placeholder="e.g. Museum Tickets"
+                                        value={formData.name}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </div>
 
-                <input
-                    type="text"
-                    name="name"
-                    placeholder="Expense Name"
-                    value={formData.name}
-                    onChange={handleChange}
-                />
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Category</label>
+                                        <select
+                                            name="type"
+                                            value={formData.type}
+                                            onChange={handleChange}
+                                        >
+                                            <option value="place">Place</option>
+                                            <option value="restaurant">Restaurant</option>
+                                            <option value="transport">Transport</option>
+                                        </select>
+                                    </div>
 
-                <select
-                    name="type"
-                    value={formData.type}
-                    onChange={handleChange}
-                >
+                                    <div className="form-group">
+                                        <label>Amount (₹)</label>
+                                        <input
+                                            type="number"
+                                            name="amount"
+                                            placeholder="0"
+                                            value={formData.amount}
+                                            onChange={handleChange}
+                                            required
+                                        />
+                                    </div>
+                                </div>
 
-                    <option value="place">
-                        Place
-                    </option>
+                                <div className="form-group">
+                                    <label>Expense Date</label>
+                                    <input
+                                        type="date"
+                                        name="expenseDate"
+                                        value={formData.expenseDate}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </div>
 
-                    <option value="restaurant">
-                        Restaurant
-                    </option>
+                                <button type="submit" className="btn-primary" style={{ marginTop: "8px" }}>
+                                    Add Expense
+                                </button>
+                            </form>
+                        </div>
 
-                    <option value="transport">
-                        Transport
-                    </option>
-
-                </select>
-
-                <input
-                    type="number"
-                    name="amount"
-                    placeholder="Amount"
-                    value={formData.amount}
-                    onChange={handleChange}
-                />
-
-                <input
-                    type="date"
-                    name="expenseDate"
-                    value={
-                        formData.expenseDate
-                    }
-                    onChange={
-                        handleChange
-                    }
-                />
-
-                <button
-                type="submit"
-                >
-                    Add Expense
-                </button>
-
-            </form>
-
-            <hr />
-
-            <h2>
-                Expense Table
-            </h2>
-
-            <table border="1">
-
-                <thead>
-
-                    <tr>
-
-                        <th>
-                            Date
-                        </th>
-
-                        <th>
-                            Name
-                        </th>
-
-                        <th>
-                            Type
-                        </th>
-
-                        <th>
-                            Amount
-                        </th>
-
-                        <th>
-                            Action
-                        </th>
-
-                    </tr>
-
-                </thead>
-
-                <tbody>
-
-                    {
-
-                        expenses.map(
-                            expense=>(
-
-                            <tr
-                            key={
-                            expense._id
-                            }
-                            >
-
-                                <td>
-                                    {
-                                    new Date(
-                                    expense.expenseDate
-                                    ).toLocaleDateString()
-                                    }
-                                </td>
-
-                                <td>
-                                    {
-                                    expense.name
-                                    }
-                                </td>
-
-                                <td>
-                                    {
-                                    expense.type
-                                    }
-                                </td>
-
-                                <td>
-                                    ₹{
-                                    expense.amount
-                                    }
-                                </td>
-
-                                <td>
-
-                                    <button
-                                    onClick={()=>handleDelete(
-                                        expense._id
-                                    )}
+                        {chartData.length > 0 && (
+                            <div className="chart-wrapper">
+                                <PieChart width={380} height={300}>
+                                    <Pie
+                                        data={chartData}
+                                        dataKey="amount"
+                                        nameKey="category"
+                                        outerRadius={80}
+                                        innerRadius={50}
+                                        paddingAngle={3}
+                                        label
                                     >
-                                        Delete
-                                    </button>
+                                        {
+                                            chartData.map((entry, index) => (
+                                                <Cell
+                                                    key={index}
+                                                    fill={COLORS[index % COLORS.length]}
+                                                />
+                                            ))
+                                        }
+                                    </Pie>
+                                    <Tooltip 
+                                        contentStyle={{ 
+                                            background: "rgba(13, 18, 38, 0.95)", 
+                                            borderColor: "var(--border-color)", 
+                                            borderRadius: "8px", 
+                                            color: "#fff" 
+                                        }} 
+                                    />
+                                    <Legend />
+                                </PieChart>
+                            </div>
+                        )}
+                    </div>
 
-                                </td>
+                    <div>
+                        <div className="glass-panel" style={{ height: "100%", overflowX: "auto" }}>
+                            <h3 style={{ marginBottom: "16px" }}>Transaction History</h3>
+                            {expenses.length === 0 ? (
+                                <p style={{ color: "var(--text-secondary)", fontStyle: "italic" }}>No expenses added yet.</p>
+                            ) : (
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Name</th>
+                                            <th>Category</th>
+                                            <th>Amount</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {
+                                            expenses.map(expense => (
+                                                <tr key={expense._id}>
+                                                    <td>
+                                                        {new Date(expense.expenseDate).toLocaleDateString()}
+                                                    </td>
+                                                    <td style={{ fontWeight: "500" }}>
+                                                        {expense.name}
+                                                    </td>
+                                                    <td>
+                                                        <span className={`timeline-badge ${expense.type}`} style={{ fontSize: "0.7rem" }}>
+                                                            {expense.type}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ color: "var(--success)", fontWeight: "600" }}>
+                                                        ₹{expense.amount}
+                                                    </td>
+                                                    <td>
+                                                        <button 
+                                                            className="btn-danger" 
+                                                            style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                                                            onClick={() => handleDelete(expense._id)}
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        }
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
+                    </div>
 
-                            </tr>
+                </div>
 
-                            )
-                        )
-
-                    }
-
-                </tbody>
-
-            </table>
-
-            <hr />
-
-            <PieChart
-            width={500}
-            height={400}
-            >
-
-                <Pie
-                    data={chartData}
-                    dataKey="amount"
-                    nameKey="category"
-                    outerRadius={120}
-                    label
-                >
-
-                    {
-
-                        chartData.map(
-                            (entry,index)=>(
-                            <Cell
-                            key={index}
-                            />
-                            )
-                        )
-
-                    }
-
-                </Pie>
-
-                <Tooltip />
-
-                <Legend />
-
-            </PieChart>
-
-        </div>
+            </div>
         </ItineraryGuard>
 
     );

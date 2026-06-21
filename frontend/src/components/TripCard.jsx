@@ -1,29 +1,38 @@
 function TripCard({ trip, onDelete, onOpen }) {
   return (
-    <div
-      style={{
-        border: "1px solid black",
-        padding: "10px",
-        margin: "10px"
-      }}
-    >
-      <h3>{trip.destination}</h3>
+    <div className="glass-card trip-card">
+      <div>
+        <div className="trip-card-header">
+          <div>
+            <h3 className="trip-card-destination">{trip.destination}</h3>
+            <div className="trip-card-source">from {trip.source}</div>
+          </div>
+        </div>
 
-      <p>Source : {trip.source}</p>
+        <div className="trip-card-details">
+          <div className="trip-detail-item">
+            <span className="trip-detail-label">Duration</span>
+            <span className="trip-detail-value">{trip.days} {trip.days === 1 ? "Day" : "Days"}</span>
+          </div>
+          <div className="trip-detail-item">
+            <span className="trip-detail-label">Travelers</span>
+            <span className="trip-detail-value">{trip.people} {trip.people === 1 ? "Person" : "People"}</span>
+          </div>
+          <div className="trip-detail-item">
+            <span className="trip-detail-label">Budget</span>
+            <span className="trip-detail-value" style={{ color: "var(--success)" }}>₹{trip.totalBudget}</span>
+          </div>
+        </div>
+      </div>
 
-      <p>Days : {trip.days}</p>
-
-      <p>People : {trip.people}</p>
-
-      <p>Budget : ₹{trip.totalBudget}</p>
-
-      <button onClick={() => onOpen(trip._id)}>
-        Select Trip
-      </button>
-
-      <button onClick={() => onDelete(trip._id)}>
-        Delete Trip
-      </button>
+      <div className="trip-card-actions">
+        <button className="btn-primary" onClick={() => onOpen(trip._id)}>
+          Open
+        </button>
+        <button className="btn-danger" onClick={() => onDelete(trip._id)}>
+          Delete
+        </button>
+      </div>
     </div>
   );
 }

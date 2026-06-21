@@ -76,62 +76,66 @@ catch (error) {
 
 return (
 
+<div className="auth-wrapper">
 
-<div>
+  <div className="auth-card">
 
-  <h1>
-    Register
-  </h1>
+    <div className="auth-header">
+      <h1>Register</h1>
+      <p>Create your JourneySync account</p>
+    </div>
 
-  <form
-  onSubmit={
-    handleSubmit
-  }
-  >
+    <form onSubmit={handleSubmit}>
 
-    <input
-      type="text"
-      name="username"
-      placeholder="User Name"
-      value={formData.username}
-      onChange={handleChange}
-    />
+      <div className="form-group">
+        <label>Username</label>
+        <input
+          type="text"
+          name="username"
+          placeholder="Enter a username"
+          value={formData.username}
+          onChange={handleChange}
+          required
+        />
+      </div>
 
-    <br />
-    <br />
+      <div className="form-group">
+        <label>Email Address</label>
+        <input
+          type="email"
+          name="email"
+          placeholder="Enter your email"
+          value={formData.email}
+          onChange={handleChange}
+          required
+        />
+      </div>
 
-    <input
-      type="email"
-      name="email"
-      placeholder="Email"
-      value={formData.email}
-      onChange={handleChange}
-    />
+      <div className="form-group">
+        <label>Password</label>
+        <input
+          type="password"
+          name="password"
+          placeholder="Create a password"
+          value={formData.password}
+          onChange={handleChange}
+          required
+        />
+      </div>
 
-    <br />
-    <br />
+      <button type="submit" className="btn-primary" style={{ marginTop: "10px" }}>
+        Register
+      </button>
 
-    <input
-      type="password"
-      name="password"
-      placeholder="Password"
-      value={formData.password}
-      onChange={handleChange}
-    />
+    </form>
 
-    <br />
-    <br />
+    <div className="auth-footer">
+      Already have an account? <a href="/login" onClick={(e) => { e.preventDefault(); navigate("/login"); }}>Login</a>
+    </div>
 
-    <button
-    type="submit"
-    >
-      Register
-    </button>
-
-  </form>
+  </div>
 
 </div>
-
 
 );
 

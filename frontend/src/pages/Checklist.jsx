@@ -134,88 +134,79 @@ function Checklist(){
     return(
 
        <ItineraryGuard>
-         <div>
+         <div className="checklist-container">
 
-            <h1>
-                Checklist
-            </h1>
+            <h1 style={{ marginBottom: "8px" }}>Trip Checklist</h1>
+            <p style={{ color: "var(--text-secondary)", marginBottom: "24px" }}>
+                Keep track of your essentials, packing lists, and pre-departure tasks.
+            </p>
 
-            <input
-                type="text"
-                placeholder="Add Task"
-                value={task}
-                onChange={(e)=>
-                setTask(
-                    e.target.value
-                )}
-            />
+            <div className="glass-panel">
+                <div className="checklist-input-row">
+                    <input
+                        type="text"
+                        placeholder="e.g. Pack passport & chargers"
+                        value={task}
+                        onChange={(e)=> setTask(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                handleAdd();
+                            }
+                        }}
+                    />
 
-            <button
-                onClick={
-                    handleAdd
-                }
-            >
-                Add
-            </button>
-
-            <hr />
-
-            {
-
-                tasks.map(item=>(
-
-                    <div
-                    key={item._id}
-                    style={{
-                        margin:"10px"
-                    }}
+                    <button
+                        className="btn-primary"
+                        onClick={handleAdd}
                     >
+                        Add
+                    </button>
+                </div>
 
-                        <input
-                            type="checkbox"
-                            checked={
-                                item.completed
-                            }
-                            onChange={()=>
-                            handleToggle(
-                                item
-                            )}
-                        />
+                {tasks.length === 0 ? (
+                    <p style={{ color: "var(--text-secondary)", fontStyle: "italic", textAlign: "center", padding: "12px" }}>
+                        All caught up! No tasks left.
+                    </p>
+                ) : (
+                    <div className="checklist-list">
+                        {
+                            tasks.map(item=>(
 
-                        <span
-                        style={{
-                            marginLeft:"10px",
+                                <div key={item._id} className="checklist-item">
 
-                            textDecoration:
-                            item.completed
-                            ?
-                            "line-through"
-                            :
-                            "none"
-                        }}
-                        >
-                            {
-                                item.task
-                            }
-                        </span>
+                                    <div 
+                                        className="checklist-item-left"
+                                        onClick={() => handleToggle(item)}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={item.completed}
+                                            onChange={() => {}} /* Handled by parent click */
+                                        />
 
-                        <button
-                        onClick={()=>
-                        handleDelete(
-                            item._id
-                        )}
-                        style={{
-                            marginLeft:"10px"
-                        }}
-                        >
-                            Delete
-                        </button>
+                                        <span className={`checklist-text ${item.completed ? "completed" : ""}`}>
+                                            {item.task}
+                                        </span>
+                                    </div>
 
+                                    <button
+                                        className="btn-danger"
+                                        style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                                        onClick={(e)=> {
+                                            e.stopPropagation();
+                                            handleDelete(item._id);
+                                        }}
+                                    >
+                                        Delete
+                                    </button>
+
+                                </div>
+
+                            ))
+                        }
                     </div>
-
-                ))
-
-            }
+                )}
+            </div>
 
         </div>
 

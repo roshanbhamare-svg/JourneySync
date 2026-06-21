@@ -57,9 +57,9 @@ function ItineraryGuard({ children }) {
     if(loading){
 
         return(
-            <h2>
-                Loading...
-            </h2>
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
+                <h2>Loading status...</h2>
+            </div>
         );
 
     }
@@ -68,17 +68,23 @@ function ItineraryGuard({ children }) {
 
         return(
 
-            <div>
+            <div className="fallback-screen glass-panel">
 
                 <h1>
                     Itinerary Not Confirmed
                 </h1>
 
                 <p>
-                    Please complete and
-                    confirm your itinerary
-                    first.
+                    Please complete and confirm your itinerary first.
                 </p>
+
+                <a 
+                    href={`/trip/${tripId}/preitinerary`} 
+                    className="btn btn-primary"
+                    style={{ textDecoration: "none" }}
+                >
+                    Go to Pre Itinerary
+                </a>
 
             </div>
 

@@ -18,70 +18,69 @@ function Home() {
 
     return (
 
-        <div
-            style={{
-                textAlign: "center",
-                marginTop: "100px"
-            }}
-        >
+        <div className="hero-container">
 
-            <h1>
+            <h1 className="hero-title">
                 JourneySync
             </h1>
 
-            <p>
-                Smart Trip Planning Platform
+            <p className="hero-subtitle">
+                The smart trip planning platform to plan, track, and budget your dream travel adventures seamlessly.
             </p>
 
-            {
-                !token ? (
+            <div className="hero-actions">
 
-                    <>
+                {
+                    !token ? (
 
-                        <button
-                            onClick={() =>
-                                navigate("/login")
-                            }
-                        >
-                            Login
-                        </button>
+                        <>
 
-                        {" "}
+                            <button
+                                className="btn-primary"
+                                onClick={() =>
+                                    navigate("/login")
+                                }
+                            >
+                                Login
+                            </button>
 
-                        <button
-                            onClick={() =>
-                                navigate("/register")
-                            }
-                        >
-                            Sign Up
-                        </button>
+                            <button
+                                className="btn-secondary"
+                                onClick={() =>
+                                    navigate("/register")
+                                }
+                            >
+                                Sign Up
+                            </button>
 
-                    </>
+                        </>
 
-                ) : (
+                    ) : (
 
-                    <>
+                        <>
 
-                        <button
-                            onClick={() =>
-                                navigate("/dashboard")
-                            }
-                        >
-                            Dashboard
-                        </button>
+                            <button
+                                className="btn-primary"
+                                onClick={() =>
+                                    navigate("/dashboard")
+                                }
+                            >
+                                Go to Dashboard
+                            </button>
 
-                        {" "}
+                            <button
+                                className="btn-secondary"
+                                onClick={handleLogout}
+                            >
+                                Logout
+                            </button>
 
-                        <button
-                            onClick={handleLogout}
-                        >
-                            Logout
-                        </button>
+                        </>
 
-                    </>
+                    )
+                }
 
-                )
-            }
+            </div>
 
         </div>
 

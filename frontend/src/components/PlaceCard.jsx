@@ -5,33 +5,21 @@ function PlaceCard({
 }) {
 
     return (
-        <div
-            style={{
-                border: "1px solid black",
-                padding: "10px",
-                margin: "10px"
-            }}
-        >
-            <h3>{place.name}</h3>
+        <div className={`item-card ${selected ? "selected" : ""}`}>
+            <div>
+                <h3 className="item-card-title">{place.name}</h3>
+                <p className="item-card-address">{place.address}</p>
+            </div>
 
-            <p>{place.address}</p>
-
-            <p>
-                Cost: ₹{place.estimatedCost}
-            </p>
-
-            <button
-                onClick={() =>
-                    onSelect(place)
-                }
-            >
-                {
-                    selected
-                    ? "Remove"
-                    : "Select"
-                }
-            </button>
-
+            <div className="item-card-footer">
+                <span className="item-card-cost">₹{place.estimatedCost}</span>
+                <button
+                    className={selected ? "btn-danger" : "btn-secondary"}
+                    onClick={() => onSelect(place)}
+                >
+                    {selected ? "Remove" : "Select"}
+                </button>
+            </div>
         </div>
     );
 }
