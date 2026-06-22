@@ -21,7 +21,8 @@ app.use((req, res, next) => {
 });
 
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: ["http://localhost:5173",
+            "http://journey-sync-ten.vercel.app"],
     credentials: true
 }));
 
