@@ -12,7 +12,7 @@ function RestaurantCard({
             </div>
 
             <div className="item-card-footer">
-                <span className="item-card-cost">₹{restaurant.estimatedCost}</span>
+                <span className="item-card-cost">₹{restaurant.estimatedcost}</span>
                 <button
                     className={selected ? "btn-danger" : "btn-secondary"}
                     onClick={() => onSelect(restaurant)}

@@ -108,8 +108,8 @@ function Restaurants() {
                     restaurant.category?.[0]
                     || "restaurant",
 
-                    estimatedCost:
-                    restaurant.estimatedCost
+                    estimatedcost:
+                    restaurant.estimatedcost
 
                 })
             );
