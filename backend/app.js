@@ -44,5 +44,12 @@ app.use("/api/v1/expense" , expenseRouter);
 
 app.use("/api/v1/checklist" , checklistRouter);
 
+app.get("/test", (req,res)=>{
+    res.json({
+        success:true,
+        message:"Backend working"
+    });
+});
+
 export default app;
 
