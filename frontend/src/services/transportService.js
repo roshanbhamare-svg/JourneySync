@@ -1,7 +1,11 @@
 import api from "./api";
 
-export const calculateFare =
-async(data)=>{
+/**
+ * Get local ride options between two locations.
+ * Calls Geoapify (geocoding + routing) + Groq (AI fare estimation) on the backend.
+ * @param {{ source: string, destination: string }} data
+ */
+export const getLocalRideOptions = async (data) => {
 
     const response =
     await api.post(
@@ -10,4 +14,5 @@ async(data)=>{
     );
 
     return response.data;
+
 };

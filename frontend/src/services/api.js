@@ -3,7 +3,7 @@ import axios from "axios";
 const api = axios.create({
 
     baseURL:
-    "https://journeysync-production-9e32.up.railway.app/api/v1",
+    "http://localhost:8000/api/v1",
 
     withCredentials:true
 
@@ -57,7 +57,7 @@ api.interceptors.response.use(
 
                 await axios.post(
 
-                    "https://journeysync-production-9e32.up.railway.app/api/v1/users/refresh-token",
+                    "http://localhost:8000/api/v1/users/refresh-token",
 
                     {},
 

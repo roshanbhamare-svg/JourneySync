@@ -1,13 +1,26 @@
 
 import axios from "axios";
 import APIerror from "../utils/APIerror.js";
+import { generateLocalRideOptions } from "../services/groq.service.js";
 
+/**
+ * Local Ride Planner — estimates realistic transport options between two local locations.
+ * Uses Geoapify for geocoding + routing, Groq for AI fare estimation.
+ */
 const getFare = async (req, res) => {
 
     try {
 
-        const { source, destination , transporttype} = req.body;
+        const { source, destination } = req.body;
 
+        if (!source || !destination) {
+            return res.status(400).json({
+                success: false,
+                message: "Source and destination are required"
+            });
+        }
+
+        // ── Step 1: Geocode source ──────────────────────────────────────────
         const sourceResponse = await axios.get(
             "https://api.geoapify.com/v1/geocode/search",
             {
@@ -18,132 +31,96 @@ const getFare = async (req, res) => {
             }
         );
 
-        const sourceFeature =
-            sourceResponse.data.features?.[0];
+        const sourceFeature = sourceResponse.data.features?.[0];
 
         if (!sourceFeature) {
             return res.status(404).json({
                 success: false,
-                message: "Source not found"
+                message: "Source location not found. Please try a more specific location name."
             });
         }
 
-        const sourceLat =
-            sourceFeature.properties.lat;
+        const sourceLat = sourceFeature.properties.lat;
+        const sourceLon = sourceFeature.properties.lon;
 
-        const sourceLon =
-            sourceFeature.properties.lon;
-
-        const destinationResponse =
-            await axios.get(
-                "https://api.geoapify.com/v1/geocode/search",
-                {
-                    params: {
-                        text: destination,
-                        apiKey: process.env.GEOAPIFY_API_KEY
-                    }
+        // ── Step 2: Geocode destination + extract city ──────────────────────
+        const destinationResponse = await axios.get(
+            "https://api.geoapify.com/v1/geocode/search",
+            {
+                params: {
+                    text: destination,
+                    apiKey: process.env.GEOAPIFY_API_KEY
                 }
-            );
+            }
+        );
 
-        const destinationFeature =
-            destinationResponse.data.features?.[0];
+        const destinationFeature = destinationResponse.data.features?.[0];
 
         if (!destinationFeature) {
             return res.status(404).json({
                 success: false,
-                message: "Destination not found"
+                message: "Destination location not found. Please try a more specific location name."
             });
         }
 
-        const destinationLat =
-            destinationFeature.properties.lat;
+        const destinationLat = destinationFeature.properties.lat;
+        const destinationLon = destinationFeature.properties.lon;
 
-        const destinationLon =
-            destinationFeature.properties.lon;
+        // Extract city name from geocoding result
+        const city =
+            destinationFeature.properties.city ||
+            destinationFeature.properties.county ||
+            destinationFeature.properties.state ||
+            "";
 
-
-        const routeResponse =
-            await axios.get(
-                "https://api.geoapify.com/v1/routing",
-                {
-                    params: {
-                        waypoints:
-`${sourceLat},${sourceLon}|${destinationLat},${destinationLon}`,
-
-                        mode: "drive",
-
-                        apiKey:
-                        process.env.GEOAPIFY_API_KEY
-                    }
+        // ── Step 3: Get road distance via Geoapify Routing ──────────────────
+        const routeResponse = await axios.get(
+            "https://api.geoapify.com/v1/routing",
+            {
+                params: {
+                    waypoints: `${sourceLat},${sourceLon}|${destinationLat},${destinationLon}`,
+                    mode: "drive",
+                    apiKey: process.env.GEOAPIFY_API_KEY
                 }
-            );
+            }
+        );
 
+        const routeFeature = routeResponse.data.features?.[0];
 
-
-        const feature =
-            routeResponse.data.features?.[0];
-
-        if (!feature) {
+        if (!routeFeature) {
             return res.status(404).json({
                 success: false,
-                message: "No route found"
+                message: "Could not calculate route between these locations."
             });
         }
 
-        const distanceMeters =
-            feature.properties.distance;
+        const distanceMeters = routeFeature.properties.distance;
+        const distanceKm = parseFloat((distanceMeters / 1000).toFixed(2));
 
-        const distanceKm =
-            distanceMeters / 1000;
+        // ── Step 4: Ask Groq for realistic transport options ────────────────
+        const rideOptions = await generateLocalRideOptions(
+            source,
+            destination,
+            distanceKm,
+            city
+        );
 
-        let fare = 0;
-
-       switch (transporttype) {
-
-    case "bus":
-
-        fare =
-        distanceKm * 2;
-
-        break;
-
-    case "train":
-
-        fare =
-        distanceKm * 1.5;
-
-        break;
-
-    case "flight":
-
-        fare =
-        (distanceKm * 6) + 500;
-
-        break;
-
-    default:
-
-        return res.status(400).json({
-            success:false,
-            message:"Invalid transport type"
-        });
-}
-
+        // ── Respond ─────────────────────────────────────────────────────────
         return res.status(200).json({
             success: true,
             source,
             destination,
-            transporttype,
-            distance:
-                distanceKm.toFixed(2),
-            estimatedFare: Math.round(fare)
+            distance: distanceKm,
+            city,
+            ...rideOptions
         });
 
-    }
-    catch (error) {
-
-        throw new APIerror(404,"estimated fare not calculated")
-
+    } catch (error) {
+        console.error("Error in getFare (Local Ride Planner):", error.message);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to calculate ride options. Please try again."
+        });
     }
 
 };
