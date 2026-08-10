@@ -30,10 +30,10 @@ export const verifyJWT = async (req, res, next) => {
         next();
 
     } catch (error) {
-        throw new APIerror(
+        return next(new APIerror(
             401,
             error?.message || "Invalid access token"
-        );
+        ));
     }
 }
 

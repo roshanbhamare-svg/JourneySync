@@ -3,31 +3,31 @@ import mongoose from "mongoose";
 const TripSchema = new mongoose.Schema({
     source:{
         type:String,
-        require:true
+        required:true
     },
     destination:{
         type:String,
-        require:true
+        required:true
     },
     days:{
         type:Number,
         default:0,
-        require:true
+        required:true
     },
     people:{
         type:Number,
         default:0,
-        require:true
+        required:true
     },
     totalBudget:{
         type:Number,
         default:0,
-        require:true
+        required:true
     },
     createdBy: {
-    type:mongoose.Schema.Types.ObjectId,
-     ref:"User",
-     required:true
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"User",
+        required:true
     }
 },
 {timestamps:true})

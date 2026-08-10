@@ -1,11 +1,15 @@
-import axios from "axios";
 import { Trip } from "../models/CreateTrip.models.js";
-import APIerror from "../utils/APIerror.js";
-import { generatePlaceDetails } from "../services/groq.service.js";
+import {
+    searchPlaces,
+    extractPhotoUrl,
+    buildAddress,
+    getPrimaryCategory,
+    parseHours,
+} from "../services/foursquare.service.js";
+import { generatePlaceDetails, generatePlacesFallback } from "../services/groq.service.js";
 
 /**
- * Process an array in batches of `batchSize`, awaiting each batch before the next.
- * This avoids hammering the Groq API with 20 simultaneous calls.
+ * Process an array in batches to avoid hammering the Groq API.
  */
 const batchProcess = async (items, batchSize, asyncFn) => {
     const results = [];
@@ -17,106 +21,119 @@ const batchProcess = async (items, batchSize, asyncFn) => {
     return results;
 };
 
+/**
+ * Keywords in category names that indicate utility/non-tourist places to skip.
+ */
+const UTILITY_KEYWORDS = [
+    "toilet", "restroom", "parking", "bus stop", "gate", "counter",
+    "ticket", "office", "donation", "atm", "bank", "post", "hospital",
+    "clinic", "pharmacy", "laundry", "shop", "store", "supermarket",
+];
+
+const isUtility = (categoryName = "") => {
+    const lower = categoryName.toLowerCase();
+    return UTILITY_KEYWORDS.some((kw) => lower.includes(kw));
+};
+
 const getPlaces = async (req, res) => {
     try {
         const { tripId } = req.params;
 
         const trip = await Trip.findById(tripId);
-
         if (!trip) {
             return res.status(404).json({ success: false, message: "Trip not found" });
         }
 
         const destination = trip.destination;
 
-        const geoResponse = await axios.get(
-            "https://api.geoapify.com/v1/geocode/search",
-            {
-                params: {
-                    text: destination,
-                    apiKey: process.env.GEOAPIFY_API_KEY
-                }
-            }
-        );
-
-        const feature = geoResponse.data.features?.[0];
-
-        if (!feature) {
-            return res.status(404).json({ success: false, message: "Destination not found" });
+        // ── Step 1: Fetch tourist attractions from Foursquare ─────────────────
+        let rawPlaces = [];
+        try {
+            rawPlaces = await searchPlaces(destination, 25);
+        } catch (fsqErr) {
+            console.warn("[Places] Foursquare fetch failed, falling back to Groq:", fsqErr.message);
         }
 
-        const lat = feature.properties.lat;
-        const lon = feature.properties.lon;
-
-        const placesResponse = await axios.get(
-            "https://api.geoapify.com/v2/places",
-            {
-                params: {
-                    categories: "tourism.sights,tourism.attraction",
-                    filter: `circle:${lon},${lat},10000`,
-                    limit: 20,
-                    apiKey: process.env.GEOAPIFY_API_KEY
-                }
-            }
-        );
-
-        const rawFeatures = placesResponse.data.features || [];
-
-        // Only process places that have a name
-        const namedFeatures = rawFeatures.filter(
-            (place) => place.properties.name && place.properties.name.trim() !== ""
-        );
-
-        // Enrich in batches of 5 to stay within Groq rate limits
-        const places = await batchProcess(namedFeatures, 5, async (place) => {
-            const name = place.properties.name.trim();
-            const placeId = place.properties.place_id;
-            const category = place.properties.categories;
-            const placeLat = place.properties.lat;
-            const placeLon = place.properties.lon;
-            const address = place.properties.address_line1;
-
-            let details = {
-                description: "",
-                estimatedFare: "",
-                openingTime: "",
-                closingTime: ""
-            };
-
-            try {
-                details = await generatePlaceDetails(name);
-            } catch (groqError) {
-                console.error(`Groq failed for place "${name}":`, groqError.message);
-            }
-
-            return {
-                name,
-                placeId,
-                category,
-                lat: placeLat,
-                lon: placeLon,
-                latitude: placeLat,
-                longitude: placeLon,
-                address,
-                estimatedCost: 100,
-                description: details.description || "",
-                estimatedFare: details.estimatedFare || "₹100",
-                openingTime: details.openingTime || "",
-                closingTime: details.closingTime || "",
-                image: ""
-            };
+        // Filter out utility entries
+        const touristPlaces = rawPlaces.filter((p) => {
+            const catName = getPrimaryCategory(p.categories);
+            return p.name && p.name.trim() !== "" && !isUtility(catName);
         });
+
+        let places = [];
+
+        if (touristPlaces.length > 0) {
+            // ── Step 2: Enrich with Groq for missing fields (batches of 5) ─────────
+            places = await batchProcess(touristPlaces, 5, async (place) => {
+                const photo = extractPhotoUrl(place.photos);
+
+                const name = place.name.trim();
+                const category = getPrimaryCategory(place.categories);
+                const rating = place.rating ? parseFloat((place.rating / 2).toFixed(1)) : null;
+                const reviewCount = null;
+                const address = buildAddress(place.location);
+                const lat = place.latitude || null;
+                const lon = place.longitude || null;
+                const { openingHours, closingHours } = parseHours(place.hours);
+                const website = place.website || "";
+                const fsqDescription = place.description || "";
+                const country = place.location?.country || "India";
+
+                let aiDetails = {
+                    description: "",
+                    estimatedEntryFee: "",
+                    bestTimeToVisit: "",
+                    recommendedVisitDuration: "",
+                    travelTips: "",
+                };
+
+                try {
+                    aiDetails = await generatePlaceDetails({ name, category, city: destination, country });
+                } catch (groqErr) {
+                    console.error(`[Groq] Failed for place "${name}":`, groqErr.message);
+                }
+
+                return {
+                    placeId: place.fsq_place_id || `place_${Math.random().toString(36).substr(2, 9)}`,
+                    name,
+                    category,
+                    rating,
+                    reviewCount,
+                    address,
+                    lat,
+                    lon,
+                    latitude: lat,
+                    longitude: lon,
+                    openingHours,
+                    closingHours,
+                    website,
+                    photo,
+                    description: fsqDescription || aiDetails.description,
+                    estimatedEntryFee: aiDetails.estimatedEntryFee,
+                    bestTimeToVisit: aiDetails.bestTimeToVisit,
+                    recommendedVisitDuration: aiDetails.recommendedVisitDuration,
+                    travelTips: aiDetails.travelTips,
+                    estimatedCost: 100,
+                };
+            });
+        }
+
+        // If Foursquare returned 0 places or failed, use Groq AI places generator
+        if (places.length === 0) {
+            console.log(`[Places] Using Groq AI fallback generation for destination "${destination}"`);
+            places = await generatePlacesFallback(destination);
+        }
 
         return res.status(200).json({
             success: true,
             destination,
-            places
+            places,
         });
-
     } catch (error) {
+        console.error("[Places] Error:", error.message);
         return res.status(500).json({
             success: false,
-            message: error.message
+            message: error.message || "Failed to fetch places. Please try again.",
         });
     }
 };

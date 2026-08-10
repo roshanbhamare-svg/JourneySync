@@ -3,24 +3,36 @@ import { useParams } from "react-router-dom";
 import { getLocalRideOptions } from "../services/transportService";
 import { addPlacesToItinerary } from "../services/itineraryService";
 
-// ── Icon helpers (inline SVG so no extra deps) ─────────────────────────────
-const icons = {
-    Metro:       "🚇",
-    Bus:         "🚌",
-    Auto:        "🛺",
-    Taxi:        "🚕",
-    "Ride Share": "📱",
+// Emoji map for transport modes
+const transportIcons = {
+    "auto": "🛺",
+    "auto rickshaw": "🛺",
+    "rickshaw": "🛺",
+    "metro": "🚇",
+    "bus": "🚌",
+    "city bus": "🚌",
+    "taxi": "🚕",
+    "cab": "🚕",
+    "uber": "📱",
+    "ola": "📱",
+    "ride share": "📱",
+    "shared auto": "🛺",
+    "walk": "🚶",
+    "walking": "🚶",
+    "train": "🚆",
+    "e-rickshaw": "🛺",
+    "cycle rickshaw": "🚲"
 };
 
-const modeColors = {
-    Metro:        { from: "#06b6d4", to: "#3b82f6" },
-    Bus:          { from: "#10b981", to: "#059669" },
-    Auto:         { from: "#f59e0b", to: "#d97706" },
-    Taxi:         { from: "#8b5cf6", to: "#6d28d9" },
-    "Ride Share": { from: "#f43f5e", to: "#be123c" },
+const getTransportIcon = (name = "") => {
+    const lower = name.toLowerCase().trim();
+    for (const [key, emoji] of Object.entries(transportIcons)) {
+        if (lower.includes(key)) return emoji;
+    }
+    return "🚗";
 };
 
-// ── Toast notification ──────────────────────────────────────────────────────
+// Toast notification component
 function Toast({ message, type, onClose }) {
     return (
         <div
@@ -48,212 +60,22 @@ function Toast({ message, type, onClose }) {
             }}
             onClick={onClose}
         >
-            <span>{type === "success" ? "✅" : "❌"}</span>
+            <span>{type === "success" ? "✅" : "⚠️"}</span>
             {message}
         </div>
     );
 }
 
-// ── Transport option card ───────────────────────────────────────────────────
-function OptionCard({ option, source, destination, tripId, onAdded }) {
-    const [adding, setAdding] = useState(false);
-    const colors = modeColors[option.type] || { from: "#06b6d4", to: "#3b82f6" };
-    const emoji  = icons[option.type] || "🚗";
-
-    const handleChoose = async () => {
-        if (!option.available) return;
-        setAdding(true);
-        try {
-            await addPlacesToItinerary({
-                tripId,
-                items: [
-                    {
-                        type: "transport",
-                        name: `${option.type} Ride`,
-                        description: `${source} → ${destination}`,
-                        estimatedCost: option.estimatedFare,
-                        category: "transport",
-                    },
-                ],
-            });
-            onAdded(`${option.type} Ride added to your itinerary! 🎉`);
-        } catch (err) {
-            console.error(err);
-            onAdded("Failed to add to itinerary. Try again.", "error");
-        } finally {
-            setAdding(false);
-        }
-    };
-
-    return (
-        <div
-            style={{
-                position: "relative",
-                background: option.available
-                    ? "rgba(255,255,255,0.03)"
-                    : "rgba(255,255,255,0.01)",
-                border: option.available
-                    ? "1px solid rgba(255,255,255,0.1)"
-                    : "1px solid rgba(255,255,255,0.04)",
-                borderRadius: "16px",
-                padding: "20px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
-                opacity: option.available ? 1 : 0.4,
-                transition: "transform 0.25s cubic-bezier(0.4,0,0.2,1), box-shadow 0.25s ease, border-color 0.25s ease",
-                cursor: option.available ? "default" : "not-allowed",
-            }}
-            onMouseEnter={e => {
-                if (option.available) {
-                    e.currentTarget.style.transform = "translateY(-4px)";
-                    e.currentTarget.style.boxShadow = `0 16px 40px rgba(0,0,0,0.35)`;
-                    e.currentTarget.style.borderColor = `${colors.from}55`;
-                }
-            }}
-            onMouseLeave={e => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-                e.currentTarget.style.borderColor = option.available
-                    ? "rgba(255,255,255,0.1)"
-                    : "rgba(255,255,255,0.04)";
-            }}
-        >
-            {/* Mode header */}
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <span style={{
-                    fontSize: "1.6rem",
-                    lineHeight: 1,
-                    background: `linear-gradient(135deg, ${colors.from}, ${colors.to})`,
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.3))",
-                }}>
-                    {emoji}
-                </span>
-                <span style={{
-                    fontFamily: "'Outfit', sans-serif",
-                    fontWeight: 700,
-                    fontSize: "1.05rem",
-                    color: "var(--text-primary)",
-                }}>
-                    {option.type}
-                </span>
-                {!option.available && (
-                    <span style={{
-                        marginLeft: "auto",
-                        fontSize: "0.7rem",
-                        fontWeight: 600,
-                        color: "var(--text-muted)",
-                        background: "rgba(255,255,255,0.06)",
-                        padding: "3px 8px",
-                        borderRadius: "999px",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                    }}>
-                        Unavailable
-                    </span>
-                )}
-            </div>
-
-            {/* Fare & Time row */}
-            <div style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "8px",
-            }}>
-                <div style={{
-                    background: "rgba(255,255,255,0.04)",
-                    borderRadius: "10px",
-                    padding: "10px 12px",
-                }}>
-                    <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>
-                        Fare
-                    </div>
-                    <div style={{
-                        fontFamily: "'Outfit', sans-serif",
-                        fontWeight: 700,
-                        fontSize: "1.15rem",
-                        background: `linear-gradient(135deg, ${colors.from}, ${colors.to})`,
-                        WebkitBackgroundClip: "text",
-                        WebkitTextFillColor: "transparent",
-                    }}>
-                        ₹{option.estimatedFare}
-                    </div>
-                </div>
-                <div style={{
-                    background: "rgba(255,255,255,0.04)",
-                    borderRadius: "10px",
-                    padding: "10px 12px",
-                }}>
-                    <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>
-                        Time
-                    </div>
-                    <div style={{
-                        fontFamily: "'Outfit', sans-serif",
-                        fontWeight: 700,
-                        fontSize: "1rem",
-                        color: "var(--text-primary)",
-                    }}>
-                        {option.estimatedTime}
-                    </div>
-                </div>
-            </div>
-
-            {/* Choose button */}
-            <button
-                id={`choose-${option.type.replace(/\s+/g, "-").toLowerCase()}`}
-                onClick={handleChoose}
-                disabled={!option.available || adding}
-                style={{
-                    width: "100%",
-                    padding: "11px",
-                    border: "none",
-                    borderRadius: "10px",
-                    fontFamily: "'Outfit', sans-serif",
-                    fontWeight: 600,
-                    fontSize: "0.9rem",
-                    cursor: option.available && !adding ? "pointer" : "not-allowed",
-                    background: option.available
-                        ? `linear-gradient(135deg, ${colors.from}, ${colors.to})`
-                        : "rgba(255,255,255,0.06)",
-                    color: "#fff",
-                    opacity: adding ? 0.7 : 1,
-                    transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                    boxShadow: option.available
-                        ? `0 4px 16px ${colors.from}33`
-                        : "none",
-                }}
-                onMouseEnter={e => {
-                    if (option.available && !adding) {
-                        e.currentTarget.style.transform = "translateY(-2px)";
-                        e.currentTarget.style.boxShadow = `0 8px 24px ${colors.from}55`;
-                    }
-                }}
-                onMouseLeave={e => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = option.available
-                        ? `0 4px 16px ${colors.from}33`
-                        : "none";
-                }}
-            >
-                {adding ? "Adding…" : option.available ? "Choose" : "Not Available"}
-            </button>
-        </div>
-    );
-}
-
-// ── Main page ───────────────────────────────────────────────────────────────
 function Transport() {
-
     const { tripId } = useParams();
 
-    const [source,      setSource]      = useState("");
+    const [source, setSource] = useState("");
     const [destination, setDestination] = useState("");
-    const [loading,     setLoading]     = useState(false);
-    const [rideData,    setRideData]    = useState(null);
-    const [error,       setError]       = useState("");
-    const [toast,       setToast]       = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [rideData, setRideData] = useState(null);
+    const [error, setError] = useState("");
+    const [toast, setToast] = useState(null);
+    const [adding, setAdding] = useState(false);
 
     const showToast = (message, type = "success") => {
         setToast({ message, type });
@@ -270,16 +92,51 @@ function Transport() {
             const data = await getLocalRideOptions({ source, destination });
             setRideData(data);
         } catch (err) {
-            const msg = err?.response?.data?.message || "Something went wrong. Please try again.";
+            console.error(err);
+            const msg = err?.response?.data?.message || "Failed to calculate routes. Please verify location names.";
             setError(msg);
         } finally {
             setLoading(false);
         }
     };
 
-    const recommendedColor = rideData
-        ? (modeColors[rideData.recommendedTransport] || { from: "#06b6d4", to: "#3b82f6" })
-        : { from: "#06b6d4", to: "#3b82f6" };
+    const handleAddToItinerary = async () => {
+        if (!rideData) return;
+        setAdding(true);
+        try {
+            // Mapping estimatedFare string to integer for itinerary cost
+            const fareClean = rideData.estimatedFare.replace(/[^0-9]/g, "");
+            let costVal = parseInt(fareClean, 10);
+            if (isNaN(costVal)) {
+                // Try range (e.g. 80-120 -> pick average or lower)
+                const numbers = rideData.estimatedFare.match(/\d+/g);
+                if (numbers && numbers.length > 0) {
+                    costVal = parseInt(numbers[0], 10);
+                } else {
+                    costVal = 100; // default fallback
+                }
+            }
+
+            await addPlacesToItinerary({
+                tripId,
+                items: [
+                    {
+                        type: "transport",
+                        name: `${rideData.recommendedTransport} Ride`,
+                        description: `${rideData.source} → ${rideData.destination} (${rideData.distance} km, ${rideData.travelTime})`,
+                        estimatedCost: costVal,
+                        category: "transport",
+                    },
+                ],
+            });
+            showToast("Transport recommendation added to your itinerary! 🗺️");
+        } catch (err) {
+            console.error(err);
+            showToast("Failed to add to itinerary. Please try again.", "error");
+        } finally {
+            setAdding(false);
+        }
+    };
 
     return (
         <>
@@ -308,7 +165,6 @@ function Transport() {
                 }
             `}</style>
 
-            {/* Toast */}
             {toast && (
                 <Toast
                     message={toast.message}
@@ -318,8 +174,7 @@ function Transport() {
             )}
 
             <div style={{ maxWidth: "720px", margin: "0 auto", padding: "8px 0 60px" }}>
-
-                {/* ── Page header ── */}
+                {/* Page header */}
                 <div style={{ marginBottom: "32px" }}>
                     <h1 style={{
                         fontFamily: "'Outfit', sans-serif",
@@ -331,14 +186,14 @@ function Transport() {
                         marginBottom: "8px",
                         letterSpacing: "-0.02em",
                     }}>
-                        🗺️ Local Ride Planner
+                        🗺️ Local Route &amp; Ride Planner
                     </h1>
                     <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", margin: 0 }}>
-                        Find the cheapest &amp; fastest way to travel between two local spots.
+                        Calculate precise road distance, travel times, and get custom local transport recommendations.
                     </p>
                 </div>
 
-                {/* ── Search form ── */}
+                {/* Search Form */}
                 <div style={{
                     background: "rgba(18,30,51,0.55)",
                     backdropFilter: "blur(20px)",
@@ -350,11 +205,10 @@ function Transport() {
                     marginBottom: "28px",
                 }}>
                     <form
-                        id="local-ride-form"
                         onSubmit={handleFindRide}
                         style={{ display: "flex", flexDirection: "column", gap: "20px" }}
                     >
-                        {/* Source */}
+                        {/* Source Location */}
                         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                             <label style={{
                                 fontFamily: "'Outfit', sans-serif",
@@ -367,12 +221,11 @@ function Transport() {
                                 📍 Source Location
                             </label>
                             <input
-                                id="source-input"
                                 className="ride-input"
                                 type="text"
-                                placeholder="e.g. Juhu Beach, Mumbai"
+                                placeholder="e.g. Sai Baba Temple"
                                 value={source}
-                                onChange={e => setSource(e.target.value)}
+                                onChange={(e) => setSource(e.target.value)}
                                 required
                                 style={{
                                     background: "rgba(255,255,255,0.04)",
@@ -390,7 +243,7 @@ function Transport() {
                             />
                         </div>
 
-                        {/* Arrow divider */}
+                        {/* Divider */}
                         <div style={{
                             display: "flex",
                             alignItems: "center",
@@ -415,7 +268,7 @@ function Transport() {
                             <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.07)" }} />
                         </div>
 
-                        {/* Destination */}
+                        {/* Destination Location */}
                         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                             <label style={{
                                 fontFamily: "'Outfit', sans-serif",
@@ -428,12 +281,11 @@ function Transport() {
                                 🏁 Destination Location
                             </label>
                             <input
-                                id="destination-input"
                                 className="ride-input"
                                 type="text"
-                                placeholder="e.g. Andheri West, Mumbai"
+                                placeholder="e.g. Wet N Joy Water Park"
                                 value={destination}
-                                onChange={e => setDestination(e.target.value)}
+                                onChange={(e) => setDestination(e.target.value)}
                                 required
                                 style={{
                                     background: "rgba(255,255,255,0.04)",
@@ -451,7 +303,7 @@ function Transport() {
                             />
                         </div>
 
-                        {/* Error */}
+                        {/* Error Alert */}
                         {error && (
                             <div style={{
                                 background: "rgba(244,63,94,0.12)",
@@ -468,9 +320,8 @@ function Transport() {
                             </div>
                         )}
 
-                        {/* Submit */}
+                        {/* Submit Button */}
                         <button
-                            id="find-ride-btn"
                             type="submit"
                             className="find-btn"
                             disabled={loading}
@@ -505,271 +356,214 @@ function Transport() {
                                         display: "inline-block",
                                         animation: "spin 0.8s linear infinite",
                                     }} />
-                                    Finding Best Rides…
+                                    Calculating Road Distance &amp; Options...
                                 </>
                             ) : (
-                                <>🔍 Find Best Local Ride</>
+                                <>🔍 Calculate Best Route</>
                             )}
                         </button>
                     </form>
                 </div>
 
-                {/* ── Results card ── */}
+                {/* Redesigned Results Card */}
                 {rideData && (
                     <div
-                        id="ride-results"
                         style={{
                             display: "flex",
                             flexDirection: "column",
-                            gap: "20px",
+                            gap: "24px",
                             animation: "fadeIn 0.45s ease",
                         }}
                     >
-                        {/* Header summary card */}
+                        {/* Final Local Transport Card */}
                         <div style={{
                             background: "rgba(18,30,51,0.6)",
                             backdropFilter: "blur(20px)",
                             WebkitBackdropFilter: "blur(20px)",
                             border: "1px solid rgba(6,182,212,0.2)",
                             borderRadius: "20px",
-                            padding: "24px 28px",
-                            boxShadow: "0 8px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(6,182,212,0.06)",
+                            padding: "28px",
+                            boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "20px"
                         }}>
-                            {/* Title */}
+                            {/* Route summary info */}
                             <div style={{
                                 display: "flex",
                                 alignItems: "center",
-                                gap: "10px",
-                                marginBottom: "20px",
+                                justifyContent: "space-between",
+                                borderBottom: "1px solid rgba(255,255,255,0.08)",
                                 paddingBottom: "16px",
-                                borderBottom: "1px solid rgba(255,255,255,0.07)",
-                            }}>
-                                <div style={{
-                                    background: "linear-gradient(135deg, #06b6d4, #3b82f6)",
-                                    borderRadius: "10px",
-                                    width: "38px",
-                                    height: "38px",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    fontSize: "1.1rem",
-                                    boxShadow: "0 4px 12px rgba(6,182,212,0.3)",
-                                    flexShrink: 0,
-                                }}>
-                                    🚀
-                                </div>
-                                <h2 style={{
-                                    fontFamily: "'Outfit', sans-serif",
-                                    fontWeight: 800,
-                                    fontSize: "1.25rem",
-                                    color: "var(--text-primary)",
-                                    margin: 0,
-                                }}>
-                                    Best Local Ride
-                                </h2>
-                            </div>
-
-                            {/* Route info */}
-                            <div style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "12px",
-                                marginBottom: "20px",
                                 flexWrap: "wrap",
+                                gap: "12px"
                             }}>
-                                <span style={{
-                                    fontFamily: "'Outfit', sans-serif",
-                                    fontWeight: 700,
-                                    fontSize: "1rem",
-                                    color: "#06b6d4",
-                                    background: "rgba(6,182,212,0.1)",
-                                    padding: "6px 14px",
-                                    borderRadius: "999px",
-                                    border: "1px solid rgba(6,182,212,0.2)",
-                                }}>
-                                    📍 {rideData.source}
-                                </span>
-                                <span style={{ color: "var(--text-muted)", fontSize: "1.2rem" }}>→</span>
-                                <span style={{
-                                    fontFamily: "'Outfit', sans-serif",
-                                    fontWeight: 700,
-                                    fontSize: "1rem",
-                                    color: "#3b82f6",
-                                    background: "rgba(59,130,246,0.1)",
-                                    padding: "6px 14px",
-                                    borderRadius: "999px",
-                                    border: "1px solid rgba(59,130,246,0.2)",
-                                }}>
-                                    🏁 {rideData.destination}
-                                </span>
+                                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                                    <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Route Journey</span>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                                        <strong style={{ color: "#06b6d4" }}>{rideData.source}</strong>
+                                        <span style={{ color: "var(--text-muted)" }}>→</span>
+                                        <strong style={{ color: "#3b82f6" }}>{rideData.destination}</strong>
+                                    </div>
+                                </div>
+                                <div style={{ display: "flex", gap: "16px" }}>
+                                    <div style={{ textAlign: "right" }}>
+                                        <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", display: "block" }}>Road Distance</span>
+                                        <strong style={{ fontSize: "1.15rem", color: "#f8fafc" }}>{rideData.distance} km</strong>
+                                    </div>
+                                    <div style={{ textAlign: "right" }}>
+                                        <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", display: "block" }}>Travel Time</span>
+                                        <strong style={{ fontSize: "1.15rem", color: "#f8fafc" }}>{rideData.travelTime}</strong>
+                                    </div>
+                                </div>
                             </div>
 
-                            {/* Stats row */}
+                            {/* Two-Column split: Recommended vs Alternative */}
                             <div style={{
                                 display: "grid",
-                                gridTemplateColumns: "repeat(3, 1fr)",
-                                gap: "12px",
-                                marginBottom: "20px",
+                                gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                                gap: "20px"
                             }}>
-                                {/* Distance */}
+                                {/* Recommended Transport Card */}
                                 <div style={{
-                                    background: "rgba(255,255,255,0.04)",
-                                    borderRadius: "12px",
-                                    padding: "14px 16px",
-                                    textAlign: "center",
+                                    background: "rgba(6,182,212,0.04)",
+                                    border: "1px solid rgba(6,182,212,0.18)",
+                                    borderRadius: "16px",
+                                    padding: "20px",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: "14px"
                                 }}>
-                                    <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>
-                                        Distance
+                                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                        <span style={{ fontSize: "2rem" }}>{getTransportIcon(rideData.recommendedTransport)}</span>
+                                        <div>
+                                            <span style={{ fontSize: "0.7rem", color: "#06b6d4", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", display: "block" }}>Recommended Transport</span>
+                                            <strong style={{ fontSize: "1.2rem", color: "#f8fafc" }}>{rideData.recommendedTransport}</strong>
+                                        </div>
                                     </div>
-                                    <div style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700, fontSize: "1.25rem", color: "var(--text-primary)" }}>
-                                        {rideData.distance} km
+
+                                    <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: "10px", padding: "12px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                                        <span style={{ fontSize: "0.68rem", color: "var(--text-muted)", textTransform: "uppercase", display: "block", marginBottom: "2px" }}>Estimated Fare</span>
+                                        <strong style={{ fontSize: "1.3rem", color: "#10b981" }}>{rideData.estimatedFare}</strong>
                                     </div>
+
+                                    <p style={{ fontSize: "0.85rem", color: "#94a3b8", margin: 0, lineHeight: 1.5 }}>
+                                        <strong>Why:</strong> {rideData.reason}
+                                    </p>
                                 </div>
-                                {/* Recommended */}
+
+                                {/* Alternative Option Card */}
                                 <div style={{
-                                    background: `linear-gradient(135deg, ${recommendedColor.from}1a, ${recommendedColor.to}1a)`,
-                                    border: `1px solid ${recommendedColor.from}33`,
-                                    borderRadius: "12px",
-                                    padding: "14px 16px",
-                                    textAlign: "center",
+                                    background: "rgba(255,255,255,0.02)",
+                                    border: "1px solid rgba(255,255,255,0.08)",
+                                    borderRadius: "16px",
+                                    padding: "20px",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: "14px"
                                 }}>
-                                    <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>
-                                        Recommended
+                                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                        <span style={{ fontSize: "2rem" }}>{getTransportIcon(rideData.alternativeTransport)}</span>
+                                        <div>
+                                            <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", display: "block" }}>Alternative Option</span>
+                                            <strong style={{ fontSize: "1.2rem", color: "#f8fafc" }}>{rideData.alternativeTransport}</strong>
+                                        </div>
                                     </div>
-                                    <div style={{
-                                        fontFamily: "'Outfit', sans-serif",
-                                        fontWeight: 700,
-                                        fontSize: "1.1rem",
-                                        background: `linear-gradient(135deg, ${recommendedColor.from}, ${recommendedColor.to})`,
-                                        WebkitBackgroundClip: "text",
-                                        WebkitTextFillColor: "transparent",
-                                    }}>
-                                        {icons[rideData.recommendedTransport] || "🚗"} {rideData.recommendedTransport}
+
+                                    <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: "10px", padding: "12px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                                        <span style={{ fontSize: "0.68rem", color: "var(--text-muted)", textTransform: "uppercase", display: "block", marginBottom: "2px" }}>Alternative Fare</span>
+                                        <strong style={{ fontSize: "1.3rem", color: "#94a3b8" }}>{rideData.alternativeFare}</strong>
                                     </div>
-                                </div>
-                                {/* Travel time */}
-                                <div style={{
-                                    background: "rgba(255,255,255,0.04)",
-                                    borderRadius: "12px",
-                                    padding: "14px 16px",
-                                    textAlign: "center",
-                                }}>
-                                    <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>
-                                        Est. Time
-                                    </div>
-                                    <div style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700, fontSize: "1.1rem", color: "var(--text-primary)" }}>
-                                        ⏱ {rideData.estimatedTravelTime}
-                                    </div>
+
+                                    <p style={{ fontSize: "0.85rem", color: "#94a3b8", margin: 0, lineHeight: 1.5 }}>
+                                        Useful as a secondary transit method to compare speed and cost.
+                                    </p>
                                 </div>
                             </div>
 
-                            {/* Reason */}
-                            {rideData.reason && (
+                            {/* Money Saving Tip */}
+                            {rideData.moneySavingTip && (
                                 <div style={{
-                                    background: `linear-gradient(135deg, ${recommendedColor.from}0f, ${recommendedColor.to}0f)`,
-                                    border: `1px solid ${recommendedColor.from}22`,
-                                    borderLeft: `3px solid ${recommendedColor.from}`,
-                                    borderRadius: "10px",
-                                    padding: "12px 16px",
-                                    color: "var(--text-secondary)",
-                                    fontSize: "0.9rem",
-                                    lineHeight: "1.5",
+                                    background: "linear-gradient(135deg, rgba(16,185,129,0.08), rgba(5,150,105,0.08))",
+                                    border: "1px solid rgba(16,185,129,0.25)",
+                                    borderRadius: "14px",
+                                    padding: "16px 20px",
+                                    display: "flex",
+                                    gap: "12px",
+                                    alignItems: "flex-start"
                                 }}>
-                                    <strong style={{ color: "var(--text-primary)", marginRight: "4px" }}>💡 Why?</strong>
-                                    {rideData.reason}
+                                    <div style={{
+                                        width: "36px",
+                                        height: "36px",
+                                        background: "linear-gradient(135deg, #10b981, #059669)",
+                                        borderRadius: "10px",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        fontSize: "1.1rem",
+                                        boxShadow: "0 4px 12px rgba(16,185,129,0.3)",
+                                        flexShrink: 0
+                                    }}>
+                                        💰
+                                    </div>
+                                    <div>
+                                        <span style={{
+                                            fontFamily: "'Outfit', sans-serif",
+                                            fontWeight: 700,
+                                            fontSize: "0.85rem",
+                                            color: "#10b981",
+                                            display: "block",
+                                            marginBottom: "4px",
+                                            textTransform: "uppercase",
+                                            letterSpacing: "0.05em"
+                                        }}>
+                                            AI Money Saving Tip
+                                        </span>
+                                        <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", margin: 0, lineHeight: 1.5 }}>
+                                            {rideData.moneySavingTip}
+                                        </p>
+                                    </div>
                                 </div>
                             )}
-                        </div>
 
-                        {/* ── Available options grid ── */}
-                        <div>
-                            <h3 style={{
-                                fontFamily: "'Outfit', sans-serif",
-                                fontWeight: 700,
-                                fontSize: "1rem",
-                                color: "var(--text-secondary)",
-                                textTransform: "uppercase",
-                                letterSpacing: "0.07em",
-                                marginBottom: "14px",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "8px",
-                            }}>
-                                <span style={{
-                                    width: "4px",
-                                    height: "18px",
-                                    background: "linear-gradient(135deg,#06b6d4,#3b82f6)",
-                                    borderRadius: "4px",
-                                    display: "inline-block",
-                                }} />
-                                Available Options
-                            </h3>
+                            {/* Add to itinerary action bar */}
                             <div style={{
-                                display: "grid",
-                                gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-                                gap: "14px",
-                            }}>
-                                {rideData.options.map((option) => (
-                                    <OptionCard
-                                        key={option.type}
-                                        option={option}
-                                        source={rideData.source}
-                                        destination={rideData.destination}
-                                        tripId={tripId}
-                                        onAdded={showToast}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* ── AI Money Saving Suggestion ── */}
-                        {rideData.moneySavingSuggestion && (
-                            <div style={{
-                                background: "linear-gradient(135deg, rgba(16,185,129,0.08), rgba(5,150,105,0.08))",
-                                border: "1px solid rgba(16,185,129,0.25)",
-                                borderRadius: "16px",
-                                padding: "20px 24px",
+                                borderTop: "1px solid rgba(255,255,255,0.08)",
+                                paddingTop: "20px",
                                 display: "flex",
-                                gap: "14px",
-                                alignItems: "flex-start",
+                                justifyContent: "flex-end"
                             }}>
-                                <div style={{
-                                    width: "42px",
-                                    height: "42px",
-                                    background: "linear-gradient(135deg, #10b981, #059669)",
-                                    borderRadius: "12px",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    fontSize: "1.2rem",
-                                    boxShadow: "0 4px 14px rgba(16,185,129,0.3)",
-                                    flexShrink: 0,
-                                }}>
-                                    💰
-                                </div>
-                                <div>
-                                    <div style={{
+                                <button
+                                    onClick={handleAddToItinerary}
+                                    disabled={adding}
+                                    style={{
+                                        background: "linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)",
+                                        color: "#fff",
+                                        border: "none",
+                                        borderRadius: "12px",
+                                        padding: "14px 28px",
                                         fontFamily: "'Outfit', sans-serif",
                                         fontWeight: 700,
-                                        fontSize: "0.9rem",
-                                        color: "#10b981",
-                                        marginBottom: "6px",
-                                        textTransform: "uppercase",
-                                        letterSpacing: "0.05em",
-                                    }}>
-                                        AI Money Saving Tip
-                                    </div>
-                                    <div style={{
-                                        color: "var(--text-secondary)",
                                         fontSize: "0.95rem",
-                                        lineHeight: "1.55",
-                                    }}>
-                                        {rideData.moneySavingSuggestion}
-                                    </div>
-                                </div>
+                                        cursor: adding ? "not-allowed" : "pointer",
+                                        opacity: adding ? 0.75 : 1,
+                                        transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                                        boxShadow: "0 4px 16px rgba(6,182,212,0.25)",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "8px"
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        if (!adding) e.currentTarget.style.transform = "translateY(-2px)";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        if (!adding) e.currentTarget.style.transform = "translateY(0)";
+                                    }}
+                                >
+                                    {adding ? "Adding..." : "➕ Add Route to Itinerary"}
+                                </button>
                             </div>
-                        )}
-
+                        </div>
                     </div>
                 )}
             </div>

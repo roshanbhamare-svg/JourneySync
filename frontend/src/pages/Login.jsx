@@ -69,17 +69,12 @@ try {
 
 }
 catch (error) {
-
+  console.error("Login Error:", error);
   alert(
-
-    error.response
-    ?.data
-    ?.message ||
-
+    error.response?.data?.message || 
+    (error.message === "Network Error" ? "Network Error: Please check your API URL (VITE_API_URL)" : error.message) || 
     "Login Failed"
-
   );
-
 }
 
 

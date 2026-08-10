@@ -20,9 +20,22 @@ app.use((req, res, next) => {
     next();
 });
 
+const allowedOrigins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
+    "https://journey-sync-ten.vercel.app"
+];
+
 app.use(cors({
-    origin: ["http://localhost:5173",
-            "https://journey-sync-ten.vercel.app"],
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(null, true); // Allow during dev / cross-origin
+        }
+    },
     credentials: true
 }));
 
@@ -57,7 +70,17 @@ app.get("/test", (req,res)=>{
     });
 });
 
-
+// Centralized Global Error Handling Middleware
+app.use((err, req, res, next) => {
+    const statusCode = err.statusCode || err.status || 500;
+    const message = err.message || "Internal Server Error";
+    console.error(`[Error] ${req.method} ${req.url} - ${statusCode}: ${message}`);
+    return res.status(statusCode).json({
+        success: false,
+        statusCode,
+        message
+    });
+});
 
 export default app;
 

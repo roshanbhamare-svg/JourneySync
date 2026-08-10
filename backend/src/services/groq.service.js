@@ -1,6 +1,6 @@
 import Groq from "groq-sdk";
 
-// Initialize Groq client lazily to avoid crashing if API key is missing at load time
+// Lazy-initialize the Groq client
 let groqClient = null;
 const getGroqClient = () => {
     if (!groqClient) {
@@ -13,45 +13,42 @@ const getGroqClient = () => {
     return groqClient;
 };
 
-// In-memory cache to avoid duplicate calls during requests
+// ── In-memory caches (keyed by place name) ──────────────────────────────────
 const placeCache = new Map();
 const restaurantCache = new Map();
+const transportCache = new Map();
 
 /**
- * Clean LLM response to ensure it's a valid JSON string.
+ * Strip markdown code fences from an LLM JSON response.
  */
 const cleanJsonResponse = (content) => {
     let clean = content.trim();
-    if (clean.startsWith("```json")) {
-        clean = clean.substring(7);
-    } else if (clean.startsWith("```")) {
-        clean = clean.substring(3);
-    }
-    if (clean.endsWith("```")) {
-        clean = clean.substring(0, clean.length - 3);
-    }
+    if (clean.startsWith("```json")) clean = clean.substring(7);
+    else if (clean.startsWith("```")) clean = clean.substring(3);
+    if (clean.endsWith("```")) clean = clean.substring(0, clean.length - 3);
     return clean.trim();
 };
 
 /**
- * Generate realistic details for a tourist place.
- * @param {string} placeName 
- * @returns {Promise<object>}
+ * Generate ONLY the 5 missing descriptive fields for a tourist place.
+ * Does NOT generate ratings, opening hours, addresses, or coordinates.
+ *
+ * @param {{ name: string, category: string, city: string, country: string }} info
+ * @returns {Promise<{ description, estimatedEntryFee, bestTimeToVisit, recommendedVisitDuration, travelTips }>}
  */
-export const generatePlaceDetails = async (placeName) => {
-    if (!placeName) {
-        return {
-            description: "",
-            estimatedFare: "",
-            openingTime: "",
-            closingTime: ""
-        };
-    }
+export const generatePlaceDetails = async ({ name, category, city, country }) => {
+    const DEFAULT = {
+        description: "",
+        estimatedEntryFee: "",
+        bestTimeToVisit: "",
+        recommendedVisitDuration: "",
+        travelTips: "",
+    };
 
-    const trimmedName = placeName.trim();
-    if (placeCache.has(trimmedName)) {
-        return placeCache.get(trimmedName);
-    }
+    if (!name) return DEFAULT;
+
+    const cacheKey = `${name}__${city}`;
+    if (placeCache.has(cacheKey)) return placeCache.get(cacheKey);
 
     try {
         const groq = getGroqClient();
@@ -62,79 +59,73 @@ export const generatePlaceDetails = async (placeName) => {
                     role: "user",
                     content: `You are an expert travel guide.
 
-Generate realistic information for the following tourist place.
+A traveller is visiting the following tourist attraction and needs helpful information.
 
-Place:
-${trimmedName}
+Place Name: ${name}
+Category: ${category}
+City: ${city}
+Country: ${country}
 
-Return ONLY valid JSON.
+Generate ONLY the following missing information. Do NOT generate or invent ratings, opening hours, addresses, or coordinates — those come from official sources.
+
+Return ONLY valid JSON with these exact keys:
 
 {
-"description":"",
-"estimatedFare":"",
-"openingTime":"",
-"closingTime":""
+  "description": "2-3 sentences describing what makes this place special.",
+  "estimatedEntryFee": "Realistic entry fee for an adult (e.g. Free, ₹50, ₹200–₹500).",
+  "bestTimeToVisit": "Best time of day or season to visit.",
+  "recommendedVisitDuration": "How long to spend here (e.g. 1-2 hours).",
+  "travelTips": "1-2 practical tips for first-time visitors."
 }
 
 Rules:
-
-* Description should be 2-3 sentences.
-* Fare should be realistic.
-* Opening and closing timings should be realistic.
-* No markdown.
-* No explanation.
-* Return JSON only.`
-                }
+- Return JSON only.
+- No markdown, no explanation.
+- Be specific and realistic for this city/country.
+- Do NOT hallucinate ratings, hours, addresses, or coordinates.`,
+                },
             ],
-            response_format: { type: "json_object" }
+            response_format: { type: "json_object" },
         });
 
-        const rawContent = response.choices?.[0]?.message?.content || "{}";
-        const cleaned = cleanJsonResponse(rawContent);
-        const data = JSON.parse(cleaned);
+        const raw = response.choices?.[0]?.message?.content || "{}";
+        const data = JSON.parse(cleanJsonResponse(raw));
 
-        // Validate structure and fill defaults
         const result = {
             description: data.description || "",
-            estimatedFare: data.estimatedFare || "",
-            openingTime: data.openingTime || "",
-            closingTime: data.closingTime || ""
+            estimatedEntryFee: data.estimatedEntryFee || "",
+            bestTimeToVisit: data.bestTimeToVisit || "",
+            recommendedVisitDuration: data.recommendedVisitDuration || "",
+            travelTips: data.travelTips || "",
         };
 
-        placeCache.set(trimmedName, result);
+        placeCache.set(cacheKey, result);
         return result;
     } catch (error) {
-        console.error(`Error in generatePlaceDetails for "${trimmedName}":`, error);
-        // Fallback response on failure
-        return {
-            description: "",
-            estimatedFare: "",
-            openingTime: "",
-            closingTime: ""
-        };
+        console.error(`[Groq] generatePlaceDetails failed for "${name}":`, error.message);
+        return DEFAULT;
     }
 };
 
 /**
- * Generate realistic details for a restaurant.
- * @param {string} restaurantName 
- * @returns {Promise<object>}
+ * Generate ONLY the 4 missing descriptive fields for a restaurant.
+ * Does NOT generate ratings, addresses, coordinates, or opening hours.
+ *
+ * @param {{ name: string, city: string, country: string }} info
+ * @returns {Promise<{ description, averageCostForTwo, mustTryDishes, travelTips }>}
  */
-export const generateRestaurantDetails = async (restaurantName) => {
-    if (!restaurantName) {
-        return {
-            description: "",
-            averageCost: "",
-            openingTime: "",
-            closingTime: "",
-            famousDishes: []
-        };
-    }
+export const generateRestaurantDetails = async ({ name, city, country }) => {
+    const DEFAULT = {
+        description: "",
+        averageCostForTwo: "",
+        mustTryDishes: "",
+        travelTips: "",
+    };
 
-    const trimmedName = restaurantName.trim();
-    if (restaurantCache.has(trimmedName)) {
-        return restaurantCache.get(trimmedName);
-    }
+    if (!name) return DEFAULT;
+
+    const cacheKey = `${name}__${city}`;
+    if (restaurantCache.has(cacheKey)) return restaurantCache.get(cacheKey);
 
     try {
         const groq = getGroqClient();
@@ -145,141 +136,76 @@ export const generateRestaurantDetails = async (restaurantName) => {
                     role: "user",
                     content: `You are a food and travel expert.
 
-Generate realistic restaurant information.
+A traveller wants to dine at the following restaurant and needs helpful information.
 
-Restaurant:
-${trimmedName}
+Restaurant Name: ${name}
+City: ${city}
+Country: ${country}
 
-Return ONLY valid JSON.
+Generate ONLY the following missing information. Do NOT generate or invent ratings, opening hours, addresses, or coordinates.
 
-{
-"description":"",
-"averageCost":"",
-"openingTime":"",
-"closingTime":"",
-"famousDishes":[]
-}
-
-Rules:
-
-* Description should be short.
-* Average cost should be realistic.
-* Timings should be realistic.
-* Famous dishes should contain 3-5 dishes.
-* Return JSON only.
-* No markdown.`
-                }
-            ],
-            response_format: { type: "json_object" }
-        });
-
-        const rawContent = response.choices?.[0]?.message?.content || "{}";
-        const cleaned = cleanJsonResponse(rawContent);
-        const data = JSON.parse(cleaned);
-
-        // Validate structure and fill defaults
-        const result = {
-            description: data.description || "",
-            averageCost: data.averageCost || "",
-            openingTime: data.openingTime || "",
-            closingTime: data.closingTime || "",
-            famousDishes: Array.isArray(data.famousDishes) ? data.famousDishes : []
-        };
-
-        restaurantCache.set(trimmedName, result);
-        return result;
-    } catch (error) {
-        console.error(`Error in generateRestaurantDetails for "${trimmedName}":`, error);
-        // Fallback response on failure
-        return {
-            description: "",
-            averageCost: "",
-            openingTime: "",
-            closingTime: "",
-            famousDishes: []
-        };
-    }
-};
-
-/**
- * Generate local ride options between two locations using Groq AI.
- * @param {string} source - Starting location name
- * @param {string} destination - Ending location name
- * @param {number} distanceKm - Road distance in kilometres
- * @param {string} city - Destination city name (may be empty)
- * @returns {Promise<object>} Structured transport options JSON
- */
-export const generateLocalRideOptions = async (source, destination, distanceKm, city = "") => {
-    const cityLine = city ? `City: ${city}` : "";
-
-    const prompt = `You are an experienced local travel guide.
-
-A traveller wants to travel between two places.
-
-Source: ${source}
-Destination: ${destination}
-Road Distance: ${distanceKm} km
-${cityLine}
-
-Estimate realistic transportation options for this journey.
-
-Consider:
-* Metro
-* Local Bus
-* Auto Rickshaw
-* Taxi
-* Ride Sharing (Ola/Uber)
-
-Use realistic Indian transportation prices.
-
-Return ONLY valid JSON.
+Return ONLY valid JSON with these exact keys:
 
 {
-  "recommendedTransport": "",
-  "reason": "",
-  "estimatedTravelTime": "",
-  "options": [
-    {
-      "type": "Metro",
-      "estimatedFare": 0,
-      "estimatedTime": "",
-      "available": true
-    },
-    {
-      "type": "Bus",
-      "estimatedFare": 0,
-      "estimatedTime": "",
-      "available": true
-    },
-    {
-      "type": "Auto",
-      "estimatedFare": 0,
-      "estimatedTime": "",
-      "available": true
-    },
-    {
-      "type": "Taxi",
-      "estimatedFare": 0,
-      "estimatedTime": "",
-      "available": true
-    },
-    {
-      "type": "Ride Share",
-      "estimatedFare": 0,
-      "estimatedTime": "",
-      "available": true
-    }
-  ],
-  "moneySavingSuggestion": ""
+  "description": "1-2 sentences describing the restaurant's cuisine and ambiance.",
+  "averageCostForTwo": "Realistic average cost for two people (e.g. ₹400–₹600).",
+  "mustTryDishes": "3-5 popular dishes comma-separated (e.g. Butter Chicken, Garlic Naan, Lassi).",
+  "travelTips": "1 practical tip for dining here (e.g. reservation needed, cash only, etc.)."
 }
 
 Rules:
 - Return JSON only.
-- No markdown.
-- No explanations.
-- If Metro is unavailable for this journey, set available=false.
-- The recommendation should balance cost, travel time, and convenience.
-- estimatedFare must be a number (integer), not a string.`;
+- No markdown, no explanation.
+- Be specific and realistic for this city/country.
+- Do NOT hallucinate ratings, hours, addresses, or coordinates.`,
+                },
+            ],
+            response_format: { type: "json_object" },
+        });
+
+        const raw = response.choices?.[0]?.message?.content || "{}";
+        const data = JSON.parse(cleanJsonResponse(raw));
+
+        const result = {
+            description: data.description || "",
+            averageCostForTwo: data.averageCostForTwo || "",
+            mustTryDishes: data.mustTryDishes || "",
+            travelTips: data.travelTips || "",
+        };
+
+        restaurantCache.set(cacheKey, result);
+        return result;
+    } catch (error) {
+        console.error(`[Groq] generateRestaurantDetails failed for "${name}":`, error.message);
+        return DEFAULT;
+    }
+};
+
+/**
+ * Recommend local transport options based on actual road distance and travel time.
+ * Groq only receives factual route data — it does NOT calculate distance.
+ *
+ * @param {{ city: string, source: string, destination: string, roadDistanceKm: number, estimatedTravelTime: string }} info
+ * @returns {Promise<{ recommendedTransport, estimatedFare, reason, alternativeTransport, alternativeFare, moneySavingTip }>}
+ */
+export const generateLocalRideOptions = async ({
+    city,
+    source,
+    destination,
+    roadDistanceKm,
+    estimatedTravelTime,
+}) => {
+    const DEFAULT = {
+        recommendedTransport: "Auto Rickshaw",
+        estimatedFare: "₹80–₹120",
+        reason: "Auto rickshaws are typically the most convenient for local travel.",
+        alternativeTransport: "Shared Auto",
+        alternativeFare: "₹20–₹40",
+        moneySavingTip: "Take a shared auto or city bus to save money.",
+    };
+
+    const cacheKey = `${source}→${destination}`;
+    if (transportCache.has(cacheKey)) return transportCache.get(cacheKey);
 
     try {
         const groq = getGroqClient();
@@ -288,40 +214,155 @@ Rules:
             messages: [
                 {
                     role: "user",
-                    content: prompt
+                    content: `You are an experienced local travel guide in India.
+
+A traveller needs to commute between two places in the same city.
+
+City: ${city || "India"}
+Source: ${source}
+Destination: ${destination}
+Road Distance: ${roadDistanceKm} km
+Estimated Travel Time: ${estimatedTravelTime}
+
+Based on this real route data, recommend the best local transport option.
+
+Consider local options: Auto Rickshaw, Taxi, Shared Auto, City Bus, Metro, E-Rickshaw, Cycle Rickshaw, Walk.
+
+Return ONLY valid JSON with these exact keys:
+
+{
+  "recommendedTransport": "Primary recommended transport mode",
+  "estimatedFare": "Realistic fare range in INR (e.g. ₹80–₹120)",
+  "reason": "1 sentence explaining why this is the best option for this route.",
+  "alternativeTransport": "A cheaper or different alternative transport mode",
+  "alternativeFare": "Realistic fare for the alternative (e.g. ₹20–₹30)",
+  "moneySavingTip": "1 practical money-saving tip specific to this route and city."
+}
+
+Rules:
+- Return JSON only.
+- No markdown, no explanation.
+- Use realistic Indian transport fares appropriate for the distance.
+- Consider city-specific transport availability (e.g. Metro may not be in small cities).
+- Do NOT calculate or guess distance — use the provided ${roadDistanceKm} km.`,
+                },
+            ],
+            response_format: { type: "json_object" },
+        });
+
+        const raw = response.choices?.[0]?.message?.content || "{}";
+        const data = JSON.parse(cleanJsonResponse(raw));
+
+        const result = {
+            recommendedTransport: data.recommendedTransport || DEFAULT.recommendedTransport,
+            estimatedFare: data.estimatedFare || DEFAULT.estimatedFare,
+            reason: data.reason || DEFAULT.reason,
+            alternativeTransport: data.alternativeTransport || DEFAULT.alternativeTransport,
+            alternativeFare: data.alternativeFare || DEFAULT.alternativeFare,
+            moneySavingTip: data.moneySavingTip || DEFAULT.moneySavingTip,
+        };
+
+        transportCache.set(cacheKey, result);
+        return result;
+    } catch (error) {
+        console.error("[Groq] generateLocalRideOptions failed:", error.message);
+        return DEFAULT;
+    }
+};
+
+/**
+ * Fallback generator for Places when Foursquare API fails or returns 0 results.
+ */
+export const generatePlacesFallback = async (destination) => {
+    try {
+        const groq = getGroqClient();
+        const response = await groq.chat.completions.create({
+            model: "llama-3.3-70b-versatile",
+            messages: [
+                {
+                    role: "user",
+                    content: `You are a world-class travel guide. Generate 12 top real tourist attractions in and around ${destination}.
+Return ONLY valid JSON with key "places" as an array of objects:
+{
+  "places": [
+    {
+      "placeId": "groq_place_1",
+      "name": "Exact Attraction Name",
+      "category": "Historic Site / Temple / Beach / Viewpoint / Museum / Park",
+      "rating": 4.6,
+      "reviewCount": 1200,
+      "address": "Realistic address in ${destination}",
+      "openingHours": "9:00 AM",
+      "closingHours": "6:00 PM",
+      "website": "",
+      "photo": null,
+      "description": "2-3 fascinating sentences describing this place.",
+      "estimatedEntryFee": "Free or ₹100",
+      "bestTimeToVisit": "Morning or Evening",
+      "recommendedVisitDuration": "1-2 hours",
+      "travelTips": "1-2 useful travel tips.",
+      "estimatedCost": 100
+    }
+  ]
+}`
                 }
             ],
             response_format: { type: "json_object" }
         });
 
-        const rawContent = response.choices?.[0]?.message?.content || "{}";
-        const cleaned = cleanJsonResponse(rawContent);
-        const data = JSON.parse(cleaned);
+        const raw = response.choices?.[0]?.message?.content || "{}";
+        const data = JSON.parse(cleanJsonResponse(raw));
+        return data.places || [];
+    } catch (err) {
+        console.error("[Groq] generatePlacesFallback failed:", err.message);
+        return [];
+    }
+};
 
-        // Validate and return with safe defaults
-        return {
-            recommendedTransport: data.recommendedTransport || "Auto",
-            reason: data.reason || "",
-            estimatedTravelTime: data.estimatedTravelTime || "",
-            options: Array.isArray(data.options) ? data.options : [],
-            moneySavingSuggestion: data.moneySavingSuggestion || ""
-        };
-    } catch (error) {
-        console.error("Error in generateLocalRideOptions:", error);
-        // Fallback with basic estimates based on distance
-        const baseFare = Math.round(distanceKm * 15);
-        return {
-            recommendedTransport: "Auto",
-            reason: "Auto rickshaws are typically the most convenient option for local travel.",
-            estimatedTravelTime: `${Math.round(distanceKm * 4)} mins`,
-            options: [
-                { type: "Metro", estimatedFare: Math.round(distanceKm * 3), estimatedTime: `${Math.round(distanceKm * 3)} mins`, available: false },
-                { type: "Bus", estimatedFare: Math.round(distanceKm * 2), estimatedTime: `${Math.round(distanceKm * 5)} mins`, available: true },
-                { type: "Auto", estimatedFare: baseFare, estimatedTime: `${Math.round(distanceKm * 4)} mins`, available: true },
-                { type: "Taxi", estimatedFare: Math.round(distanceKm * 20), estimatedTime: `${Math.round(distanceKm * 4)} mins`, available: true },
-                { type: "Ride Share", estimatedFare: Math.round(distanceKm * 18), estimatedTime: `${Math.round(distanceKm * 4)} mins`, available: true }
+/**
+ * Fallback generator for Restaurants when Foursquare API fails or returns 0 results.
+ */
+export const generateRestaurantsFallback = async (destination) => {
+    try {
+        const groq = getGroqClient();
+        const response = await groq.chat.completions.create({
+            model: "llama-3.3-70b-versatile",
+            messages: [
+                {
+                    role: "user",
+                    content: `You are an expert culinary guide. Generate 12 top real, popular dining spots and restaurants in ${destination}.
+Return ONLY valid JSON with key "restaurants" as an array of objects:
+{
+  "restaurants": [
+    {
+      "placeId": "groq_rest_1",
+      "name": "Exact Restaurant Name",
+      "category": "Fine Dining / Local Cuisine / Seafood / Café / Street Food",
+      "rating": 4.5,
+      "reviewCount": 850,
+      "address": "Realistic address in ${destination}",
+      "openingHours": "11:00 AM",
+      "closingHours": "11:00 PM",
+      "website": "",
+      "photo": null,
+      "description": "1-2 sentences describing the food, ambiance, and specialty.",
+      "averageCostForTwo": "₹400–₹800",
+      "mustTryDishes": "Dish 1, Dish 2, Dish 3",
+      "travelTips": "Reservation recommended or Cash only",
+      "estimatedcost": 300
+    }
+  ]
+}`
+                }
             ],
-            moneySavingSuggestion: "Taking the bus is the most economical option for this route."
-        };
+            response_format: { type: "json_object" }
+        });
+
+        const raw = response.choices?.[0]?.message?.content || "{}";
+        const data = JSON.parse(cleanJsonResponse(raw));
+        return data.restaurants || [];
+    } catch (err) {
+        console.error("[Groq] generateRestaurantsFallback failed:", err.message);
+        return [];
     }
 };

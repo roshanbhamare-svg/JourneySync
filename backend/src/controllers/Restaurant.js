@@ -1,10 +1,15 @@
-import axios from "axios";
 import { Trip } from "../models/CreateTrip.models.js";
-import APIerror from "../utils/APIerror.js";
-import { generateRestaurantDetails } from "../services/groq.service.js";
+import {
+    searchRestaurants,
+    extractPhotoUrl,
+    buildAddress,
+    getPrimaryCategory,
+    parseHours,
+} from "../services/foursquare.service.js";
+import { generateRestaurantDetails, generateRestaurantsFallback } from "../services/groq.service.js";
 
 /**
- * Process an array in batches of `batchSize`, awaiting each batch before the next.
+ * Process an array in batches to avoid hammering the Groq API.
  */
 const batchProcess = async (items, batchSize, asyncFn) => {
     const results = [];
@@ -17,108 +22,99 @@ const batchProcess = async (items, batchSize, asyncFn) => {
 };
 
 const getRestaurants = async (req, res) => {
-
     try {
         const { tripId } = req.params;
 
         const trip = await Trip.findById(tripId);
-
         if (!trip) {
             return res.status(404).json({ success: false, message: "Trip not found" });
         }
 
         const destination = trip.destination;
 
-        const geoResponse = await axios.get(
-            "https://api.geoapify.com/v1/geocode/search",
-            {
-                params: {
-                    text: destination,
-                    apiKey: process.env.GEOAPIFY_API_KEY
-                }
-            }
-        );
-
-        const feature = geoResponse.data.features?.[0];
-
-        if (!feature) {
-            return res.status(404).json({ success: false, message: "Destination not found" });
+        // ── Step 1: Fetch restaurants from Foursquare ─────────────────────────
+        let rawRestaurants = [];
+        try {
+            rawRestaurants = await searchRestaurants(destination, 20);
+        } catch (fsqErr) {
+            console.warn("[Restaurants] Foursquare fetch failed, falling back to Groq:", fsqErr.message);
         }
 
-        const lat = feature.properties.lat;
-        const lon = feature.properties.lon;
+        // Only keep named entries
+        const namedRestaurants = rawRestaurants.filter(
+            (r) => r.name && r.name.trim() !== ""
+        );
 
-        const restaurantResponse = await axios.get(
-            "https://api.geoapify.com/v2/places",
-            {
-                params: {
-                    categories: "catering.restaurant",
-                    filter: `circle:${lon},${lat},20000`,
-                    limit: 20,
-                    apiKey: process.env.GEOAPIFY_API_KEY
+        let restaurants = [];
+
+        if (namedRestaurants.length > 0) {
+            // ── Step 2: Enrich with Groq for missing fields (batches of 5) ─────────
+            restaurants = await batchProcess(namedRestaurants, 5, async (restaurant) => {
+                const photo = extractPhotoUrl(restaurant.photos);
+
+                const name = restaurant.name.trim();
+                const category = getPrimaryCategory(restaurant.categories);
+                const rating = restaurant.rating
+                    ? parseFloat((restaurant.rating / 2).toFixed(1))
+                    : null;
+                const reviewCount = null;
+                const address = buildAddress(restaurant.location);
+                const { openingHours, closingHours } = parseHours(restaurant.hours);
+                const website = restaurant.website || "";
+                const country = restaurant.location?.country || "India";
+
+                let aiDetails = {
+                    description: "",
+                    averageCostForTwo: "",
+                    mustTryDishes: "",
+                    travelTips: "",
+                };
+
+                try {
+                    aiDetails = await generateRestaurantDetails({ name, city: destination, country });
+                } catch (groqErr) {
+                    console.error(`[Groq] Failed for restaurant "${name}":`, groqErr.message);
                 }
-            }
-        );
 
-        const rawFeatures = restaurantResponse.data.features || [];
+                return {
+                    placeId: restaurant.fsq_place_id || `rest_${Math.random().toString(36).substr(2, 9)}`,
+                    name,
+                    category,
+                    rating,
+                    reviewCount,
+                    address,
+                    openingHours,
+                    closingHours,
+                    website,
+                    photo,
+                    description: aiDetails.description,
+                    averageCostForTwo: aiDetails.averageCostForTwo,
+                    mustTryDishes: aiDetails.mustTryDishes,
+                    travelTips: aiDetails.travelTips,
+                    estimatedcost: 300,
+                    estimatedCost: 300,
+                };
+            });
+        }
 
-        // Only process restaurants that have a name
-        const namedFeatures = rawFeatures.filter(
-            (r) => r.properties.name && r.properties.name.trim() !== ""
-        );
-
-        // Enrich in batches of 5 to stay within Groq rate limits
-        const restaurants = await batchProcess(namedFeatures, 5, async (restaurant) => {
-            const name = restaurant.properties.name.trim();
-            const placeId = restaurant.properties.place_id;
-            const category = restaurant.properties.categories;
-            const rLat = restaurant.properties.lat;
-            const rLon = restaurant.properties.lon;
-            const address = restaurant.properties.address_line1;
-
-            let details = {
-                description: "",
-                averageCost: "",
-                openingTime: "",
-                closingTime: "",
-                famousDishes: []
-            };
-
-            try {
-                details = await generateRestaurantDetails(name);
-            } catch (groqError) {
-                console.error(`Groq failed for restaurant "${name}":`, groqError.message);
-            }
-
-            return {
-                name,
-                placeId,
-                category,
-                lat: rLat,
-                lon: rLon,
-                address,
-                description: details.description || "",
-                averageCost: details.averageCost || "₹300",
-                estimatedcost: 300,
-                openingTime: details.openingTime || "",
-                closingTime: details.closingTime || "",
-                famousDishes: Array.isArray(details.famousDishes) ? details.famousDishes : [],
-                image: ""
-            };
-        });
+        // Fallback to Groq if 0 results
+        if (restaurants.length === 0) {
+            console.log(`[Restaurants] Using Groq AI fallback generation for destination "${destination}"`);
+            restaurants = await generateRestaurantsFallback(destination);
+        }
 
         return res.status(200).json({
             success: true,
-            restaurants
+            destination,
+            restaurants,
         });
-
     } catch (error) {
+        console.error("[Restaurants] Error:", error.message);
         return res.status(500).json({
             success: false,
-            message: error.message
+            message: error.message || "Failed to fetch restaurants. Please try again.",
         });
     }
-
 };
 
 export default getRestaurants;
