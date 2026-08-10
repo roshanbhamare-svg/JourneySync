@@ -1,8 +1,13 @@
 import axios from "axios";
 
+let backendUrl = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+if (backendUrl && !backendUrl.endsWith('/api/v1')) {
+    backendUrl = backendUrl.replace(/\/$/, '') + '/api/v1';
+}
+
 const api = axios.create({
 
-    baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1",
+    baseURL: backendUrl,
 
     withCredentials:true
 
@@ -56,7 +61,7 @@ api.interceptors.response.use(
 
                 await axios.post(
 
-                    `${import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1"}/users/refresh-token`,
+                    `${backendUrl}/users/refresh-token`,
 
                     {},
 
