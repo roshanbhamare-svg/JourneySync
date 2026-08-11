@@ -6,6 +6,10 @@ JourneySync is a full-stack web application that helps users plan and manage the
 
 ---
 
+## Live Link : https://journey-sync-ten.vercel.app
+
+---
+
 ## ✨ Features
 
 - **User Authentication:** Secure registration and login using JWT-based authentication with access and refresh tokens.
