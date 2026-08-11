@@ -1,4 +1,4 @@
-# 🌍 JourneySync
+# JourneySync
 
 > AI-powered trip planning and travel management platform.
 
@@ -9,33 +9,19 @@ JourneySync is a full-stack web application that helps users plan and manage the
 ## ✨ Features
 
 - **User Authentication:** Secure registration and login using JWT-based authentication with access and refresh tokens.
-
 - **Trip Management:** Create, update, view, and delete trips with information such as source, destination, number of days, number of travelers, and total budget.
-
 - **Places Discovery:** Discover tourist attractions for the selected destination with information such as name, location, images, description, opening/closing timings, ratings, and estimated entry fees.
-
 - **Restaurant Discovery:** Discover restaurants around the destination with information such as name, images, description, ratings, reviews, opening/closing timings, estimated cost, and famous dishes.
-
 - **AI-Enhanced Travel Information:** Use Groq LLM to generate or enrich information that is unavailable from external APIs, such as descriptions, famous dishes, and contextual travel information.
-
 - **Local Transportation:** Enter a source and destination to find estimated distance, travel time, local transportation options, estimated fare, and cost-saving alternatives.
-
 - **AI Transportation Suggestions:** AI can suggest cheaper or more convenient alternatives such as public transportation instead of a taxi.
-
 - **AI Itinerary Planner:** Analyze selected places, restaurants, transportation, trip duration, and budget before creating the final itinerary.
-
 - **Itinerary Optimization:** AI identifies inefficient ordering, excessive travel, time conflicts, and other planning issues and suggests improvements.
-
 - **Final Itinerary:** Generate a structured trip itinerary containing selected places, restaurants, and transportation.
-
 - **Budget Tracker:** Track estimated costs of places, restaurants, transportation, and other planned activities against the total trip budget.
-
 - **AI Budget Optimization:** Analyze planned expenses and suggest cheaper alternatives to help users stay within their budget.
-
 - **Expense Tracker:** Record actual expenses during the trip and compare them with the estimated trip budget.
-
 - **Weather:** Display weather information for the selected destination.
-
 - **Travel Checklist:** Create, complete, and manage a personalized checklist for the trip.
 
 ---
@@ -135,7 +121,9 @@ JourneySync/
 │   └── vite.config.js
 │
 └── README.md
+```
 
+---
 
 ## 🛠️ Setup & Installation
 
@@ -144,13 +132,31 @@ JourneySync/
 ```bash
 git clone <your-repository-url>
 cd JourneySync
+```
 
+### 2. Install Backend Dependencies
+
+```bash
 cd backend
 npm install
+```
 
+### 3. Install Frontend Dependencies
+
+Open a new terminal:
+
+```bash
 cd frontend
 npm install
+```
 
+---
+
+## 🔑 Environment Variables
+
+Create a `.env` file inside the `backend` directory.
+
+```env
 PORT=5000
 
 MONGO_URI=your_mongodb_connection_string
@@ -166,9 +172,46 @@ GROQ_API_KEY=your_groq_api_key
 PLACES_API_KEY=your_places_api_key
 
 WEATHER_API_KEY=your_weather_api_key
+```
 
+> **Important:** Never commit `.env` files, API keys, database credentials, or JWT secrets to GitHub.
+
+Add `.env` to your `.gitignore` file.
+
+---
+
+## 🏃 Running Locally
+
+The backend and frontend need to run simultaneously in separate terminals.
+
+### Start Backend
+
+```bash
 cd backend
 npm run dev
+```
 
+The backend will normally run at:
+
+```text
+http://localhost:5000
+```
+
+### Start Frontend
+
+Open another terminal:
+
+```bash
 cd frontend
 npm run dev
+```
+
+The frontend will normally run at:
+
+```text
+http://localhost:5173
+```
+
+Open the frontend URL in your browser to use JourneySync.
+
+---
