@@ -47,9 +47,12 @@ function Dashboard() {
 
     });
 
+    const [loadingTrips, setLoadingTrips] = useState(true);
+    const [creatingTrip, setCreatingTrip] = useState(false);
+
     const fetchTrips =
     async () => {
-
+        setLoadingTrips(true);
         try {
 
             const response =
@@ -64,6 +67,8 @@ function Dashboard() {
 
             console.log(error);
 
+        } finally {
+            setLoadingTrips(false);
         }
 
     };
@@ -92,6 +97,7 @@ function Dashboard() {
     async (e) => {
 
         e.preventDefault();
+        setCreatingTrip(true);
 
         try {
 
@@ -124,6 +130,8 @@ function Dashboard() {
 
             console.log(error);
 
+        } finally {
+            setCreatingTrip(false);
         }
 
     };
@@ -184,7 +192,33 @@ return (
             <div className="create-trip-section">
                 <div className="create-trip-card">
                     <h3 className="create-trip-title">Plan a New Adventure</h3>
-                    <form onSubmit={handleCreateTrip}>
+                    {creatingTrip ? (
+                        <div style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: "40px",
+                            gap: "16px"
+                        }}>
+                            <div style={{
+                                width: "48px",
+                                height: "48px",
+                                border: "4px solid rgba(6,182,212,0.15)",
+                                borderTopColor: "#06b6d4",
+                                borderRadius: "50%",
+                                animation: "spin 1s linear infinite",
+                            }} />
+                            <p style={{
+                                color: "var(--text-secondary)",
+                                fontFamily: "'Outfit', sans-serif",
+                                fontWeight: 500
+                            }}>
+                                Crafting your perfect itinerary...
+                            </p>
+                        </div>
+                    ) : (
+                        <form onSubmit={handleCreateTrip}>
                         <div className="form-row">
                             <input
                                 type="text"
@@ -236,6 +270,7 @@ return (
                             Create Trip
                         </button>
                     </form>
+                    )}
                 </div>
             </div>
 
@@ -244,7 +279,33 @@ return (
             </h2>
 
             <div className="trips-grid">
-                {
+                {loadingTrips ? (
+                    <div style={{
+                        gridColumn: "1 / -1",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: "40px",
+                        gap: "16px"
+                    }}>
+                        <div style={{
+                            width: "48px",
+                            height: "48px",
+                            border: "4px solid rgba(6,182,212,0.15)",
+                            borderTopColor: "#06b6d4",
+                            borderRadius: "50%",
+                            animation: "spin 1s linear infinite",
+                        }} />
+                        <p style={{
+                            color: "var(--text-secondary)",
+                            fontFamily: "'Outfit', sans-serif",
+                            fontWeight: 500
+                        }}>
+                            Loading your trips...
+                        </p>
+                    </div>
+                ) : trips.length > 0 ? (
                     trips.map((trip) => (
                         <TripCard
                             key={trip._id}
@@ -253,7 +314,16 @@ return (
                             onOpen={handleOpen}
                         />
                     ))
-                }
+                ) : (
+                    <div style={{
+                        gridColumn: "1 / -1",
+                        textAlign: "center",
+                        padding: "40px",
+                        color: "var(--text-secondary)"
+                    }}>
+                        You have not created any trips yet.
+                    </div>
+                )}
             </div>
 
         </div>
